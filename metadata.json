@@ -1,0 +1,5 @@
+{
+  "name": "Alpha Quelle",
+  "description": "Aggregates public information from C-Suite executives and performs real-time sentiment analysis using live RSS scraping and Natural Language Processing.",
+  "requestFramePermissions": []
+}
