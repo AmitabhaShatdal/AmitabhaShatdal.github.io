@@ -3,232 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com; connect-src 'self' https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com; connect-src 'self' https:;">
     <meta name="description" content="Real-time sentiment analysis of C-Suite executives vs Wall Street expectations using Natural Language Processing. Deep dive into earnings calls, social media, and news." />
     <meta name="keywords" content="stocks, sentiment analysis, Natural Language Processing, executive analysis, finance" />
-    
-    <!-- Preconnect to external domains for faster loading -->
-    <link rel="preconnect" href="https://esm.sh" crossorigin />
-    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
-    
-    <!-- Open Graph / Social Media Meta Tags -->
     <meta property="og:title" content="Alpha Quelle - Market vs. Management" />
     <meta property="og:description" content="Analyze the gap between what Wall Street predicts and what Executives are actually saying." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="Alpha Quelle" />
-    
-    <!-- Twitter Card Meta Tags -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Alpha Quelle - Market vs. Management" />
-    <meta name="twitter:description" content="Analyze the gap between what Wall Street predicts and what Executives are actually saying." />
-    <meta name="twitter:image" content="/og-image.png" />
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://alphaquelle.com/" />
-    
     <title>Alpha Quelle - Market vs Management</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    
-    <!-- Critical CSS inlined for instant render -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+      
       :root {
         --glass-border: rgba(255, 255, 255, 0.4);
         --glass-surface: rgba(255, 255, 255, 0.65);
         --dark-surface: #0f172a;
       }
       
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      
       body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        background-color: #f8fafc;
-        color: #0f172a;
-        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+        background-color: #f1f5f9; /* Slate 100 */
+        color: #0f172a; /* Slate 900 */
       }
       
-      h1, h2, h3, h4, h5, h6, .font-serif {
-        font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
-      }
-
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-      
-      /* Loading skeleton styles */
-      .loading-container {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Playfair Display', serif;
       }
       
-      .loading-header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        width: 100%;
-        background: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        height: 80px;
-        display: flex;
-        align-items: center;
-        padding: 0 24px;
+      /* Custom scrollbar for webkit */
+      
+      ::-webkit-scrollbar {
+        width: 6px;
       }
       
-      .loading-logo {
-        display: flex;
-        align-items: center;
-        gap: 16px;
+      ::-webkit-scrollbar-track {
+        background: transparent;
       }
       
-      .loading-icon {
-        width: 24px;
-        height: 24px;
-        background: #4f46e5;
-        border-radius: 4px;
-        animation: pulse 1.5s ease-in-out infinite;
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 3px;
       }
       
-      .loading-title {
-        color: white;
-        font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
-        font-size: 1.5rem;
-        font-weight: bold;
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
       }
       
-      .loading-main {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 64px 16px;
+      .font-serif {
+        font-family: 'Playfair Display', serif;
       }
-      
-      .loading-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 16px;
-        border-radius: 9999px;
-        background: #0f172a;
-        color: white;
-        font-size: 11px;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        margin-bottom: 32px;
-      }
-      
-      .loading-dot {
-        width: 8px;
-        height: 8px;
-        background: #10b981;
-        border-radius: 50%;
-        animation: pulse 1s ease-in-out infinite;
-      }
-      
-      .loading-h1 {
-        font-size: clamp(3rem, 8vw, 6rem);
-        font-weight: bold;
-        color: #0f172a;
-        text-align: center;
-        margin-bottom: 24px;
-        font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
-      }
-      
-      .loading-h1 span {
-        background: linear-gradient(to right, #4f46e5, #7c3aed);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-style: italic;
-      }
-      
-      .loading-subtitle {
-        font-size: 1.125rem;
-        color: #64748b;
-        text-align: center;
-        max-width: 32rem;
-        line-height: 1.75;
-      }
-      
-      .loading-spinner {
-        margin-top: 48px;
-        width: 40px;
-        height: 40px;
-        border: 3px solid #e2e8f0;
-        border-top-color: #4f46e5;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-      }
-      
-      /* Hide loading when app is ready */
-      .app-ready .loading-skeleton { display: none; }
     </style>
-    
-    <!-- Tailwind - loaded async -->
-    <script>
-      (function() {
-        var s = document.createElement('script');
-        s.src = 'https://cdn.tailwindcss.com';
-        s.async = true;
-        document.head.appendChild(s);
-      })();
-    </script>
-    
-    <!-- Google AdSense - loaded async -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6254425311561751" crossorigin="anonymous"></script>
-    
 
-    <link rel="stylesheet" href="/index.css">
-    <script type="importmap">
+<link rel="stylesheet" href="/index.css">
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
     "react/": "https://esm.sh/react@^19.2.3/",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
-    </script>
-    <script type="module" crossorigin src="/assets/index-BV_EVZCh.js"></script>
-  </head>
+</script>
+  <script type="module" crossorigin src="/assets/index-SfhQxSR2.js"></script>
+</head>
   <body>
-    <div id="root">
-      <!-- Loading skeleton - shown instantly while JS loads -->
-      <div class="loading-skeleton">
-        <div class="loading-container">
-          <header class="loading-header">
-            <div class="loading-logo">
-              <div class="loading-icon"></div>
-              <span class="loading-title">Alpha Quelle</span>
-            </div>
-          </header>
-          <main class="loading-main">
-            <div class="loading-badge">
-              <div class="loading-dot"></div>
-              <span>Real-time Intelligence</span>
-            </div>
-            <h1 class="loading-h1">Alpha <span>Quelle</span></h1>
-            <p class="loading-subtitle">Spot the disconnect between Wall Street hype and C-Suite reality.</p>
-            <div class="loading-spinner"></div>
-          </main>
-        </div>
-      </div>
-    </div>
-  </body>
+    <div id="root"></div>
+</body>
 </html>
