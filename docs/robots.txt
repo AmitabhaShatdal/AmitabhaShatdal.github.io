@@ -1,0 +1,11 @@
+# robots.txt for Alpha Quelle
+# https://alphaquelle.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://alphaquelle.com/sitemap.xml
+
+# Crawl-delay (optional, be kind to crawlers)
+Crawl-delay: 1
