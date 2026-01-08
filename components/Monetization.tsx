@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 interface AdBannerProps {
   slot?: string;
@@ -7,62 +7,47 @@ interface AdBannerProps {
 }
 
 /**
- * 1. DISPLAY ADS COMPONENT (Google AdSense)
+ * 1. DISPLAY ADS COMPONENT (Google AdSense Placeholder)
  * Supports 'horizontal' (leaderboard), 'vertical' (skyscraper), and 'square' (rect).
  */
 export const AdBanner: React.FC<AdBannerProps> = ({ slot, variant = 'horizontal', className = '' }) => {
   
-  useEffect(() => {
-    try {
-      // @ts-ignore
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error("AdSense error", err);
-    }
-  }, []);
-
   let containerClasses = "w-full mx-auto relative z-10";
-  let boxClasses = "bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center shadow-inner rounded-lg group hover:border-indigo-200 transition-colors overflow-hidden";
-  
-  // Default Slots based on user config
-  let adSlotId = "6681086623"; // Horizontal default
+  let boxClasses = "bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center shadow-inner rounded-lg group hover:border-indigo-200 transition-colors";
+  let innerClasses = "w-full h-full flex items-center justify-center bg-white rounded border border-dashed border-slate-300";
+  let textClasses = "text-slate-400 text-xs font-mono group-hover:text-indigo-400 transition-colors";
 
   if (variant === 'vertical') {
     // Skyscraper style
-    adSlotId = "4222444245";
     containerClasses = "w-full max-w-[160px] h-full"; 
-    boxClasses += " h-full min-h-[600px]";
+    boxClasses += " h-full p-4 min-h-[600px]";
+    innerClasses += " p-2";
   } else if (variant === 'square') {
     // Rect style
-    adSlotId = "3817768493";
     containerClasses = "w-full max-w-sm mx-auto";
-    boxClasses += " aspect-square min-h-[250px]";
+    boxClasses += " aspect-square p-6";
+    innerClasses += " p-6";
   } else {
     // Horizontal (Leaderboard) default
-    adSlotId = "6681086623";
     containerClasses += " max-w-4xl";
-    boxClasses += " min-h-[100px]";
+    boxClasses += " p-8 min-h-[120px]";
+    innerClasses += " p-6";
   }
-
-  // Override if slot prop provided
-  if (slot) adSlotId = slot;
 
   // Merge custom class names
   containerClasses = `${containerClasses} ${className}`;
 
+  const label = variant === 'vertical' ? 'Skyscraper' : variant === 'square' ? 'Square' : 'Display Ad';
+
   return (
     <div className={containerClasses}>
       <div className={boxClasses}>
-        <div className="w-full h-full flex items-center justify-center bg-white/50">
-           <ins className="adsbygoogle"
-             style={{ display: 'block', width: '100%', height: '100%' }}
-             data-ad-client="ca-pub-6254425311561751"
-             data-ad-slot={adSlotId}
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
+        <span className="text-[10px] text-slate-300 uppercase tracking-widest mb-2 font-bold opacity-60 group-hover:opacity-100 transition-opacity">Ad</span>
+        {/* This is where the Google Ad Script would go */}
+        <div className={innerClasses}>
+           <p className={textClasses}>Google AdSense {label}</p>
         </div>
       </div>
-      <span className="block text-center text-[9px] text-slate-300 uppercase tracking-widest mt-1 opacity-60">Advertisement</span>
     </div>
   );
 };
