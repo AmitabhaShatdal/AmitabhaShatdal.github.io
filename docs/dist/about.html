@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="About Alpha Quelle - Our mission" />
+    <title>About - Alpha Quelle</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="min-h-screen flex flex-col">
+      <header style="background-color: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.05); box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2);">
+        <div style="max-width: 72rem; margin: 0 auto; display: flex; height: 5rem; align-items: center; padding: 0 1.5rem;">
+          <a href="index.html" style="display: flex; gap: 1rem; align-items: center; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" style="height: 1.5rem; width: 1.5rem; color: white;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span style="color: white; font-family: GentiumBookW, Georgia, serif; font-weight: 700; font-size: 1.5rem; letter-spacing: -0.025em;">Alpha Quelle</span>
+          </a>
+        </div>
+      </header>
+
+      <main class="flex-grow max-w-4xl mx-auto px-6 py-12">
+        <h1 class="text-4xl font-bold text-slate-900 mb-8">About Alpha Quelle</h1>
+        
+        <div class="space-y-8">
+          <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+            <h2 class="text-2xl font-semibold text-slate-800 mb-4">Our Mission</h2>
+            <p class="text-slate-600 leading-relaxed mb-4">
+              Alpha Quelle exists to bridge the gap between what Wall Street expects and what company executives are actually saying. We believe that the most valuable investment insights often lie in the subtle differences between market consensus and management sentiment.
+            </p>
+            <p class="text-slate-600 leading-relaxed mb-4">
+              Our name combines "Alpha"—the excess return an investment generates over a benchmark—with "Quelle," the German word for "source." Together, they represent our commitment to being your source for alpha-generating insights.
+            </p>
+            <p class="text-slate-600 leading-relaxed">
+              We empower individual investors and analysts with institutional-grade sentiment analysis tools, democratizing access to the kind of deep insights that were once available only to large financial institutions.
+            </p>
+          </section>
+
+          <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+            <h2 class="text-2xl font-semibold text-slate-800 mb-4">Disclaimer</h2>
+            <p class="text-slate-600 leading-relaxed text-sm">
+              Alpha Quelle provides information and analysis for educational and informational purposes only. Nothing on this website constitutes financial advice, investment advice, trading advice, or any other sort of advice. You should not treat any of the website's content as such. Alpha Quelle does not recommend that any securities should be bought, sold, or held by you. Always conduct your own due diligence before making any investment decisions.
+            </p>
+          </section>
+        </div>
+      </main>
+
+      <footer style="background-color: #f5f5f5;" class="text-slate-500 py-4 border-t border-slate-200">
+        <div class="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p class="text-sm">&copy; <span id="year"></span> Alpha Quelle. All rights reserved.</p>
+          <nav class="flex gap-2">
+            <a href="privacy.html" class="footer-link">Privacy</a>
+            <a href="about.html" class="footer-link">About</a>
+            <a href="contact.html" class="footer-link">Contact</a>
+          </nav>
+        </div>
+      </footer>
+    </div>
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  </body>
+</html>
