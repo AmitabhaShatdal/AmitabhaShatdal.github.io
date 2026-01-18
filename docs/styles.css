@@ -128,8 +128,8 @@ h1, h2, h3 {
 .bg-indigo-100 { background-color: #e0e7ff; }
 
 /* Borders & Rounded */
-.border { border-width: 1px; }
-.border-t { border-top-width: 1px; }
+.border { border-width: 1px; border-style: solid; }
+.border-t { border-top-width: 1px; border-top-style: solid; }
 .border-slate-100 { border-color: #f1f5f9; }
 .border-slate-200 { border-color: #e2e8f0; }
 .rounded { border-radius: 0.25rem; }
