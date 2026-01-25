@@ -768,7 +768,8 @@ const fetchRSS = async (url: string, sourceName: string): Promise<Element[]> => 
     const proxyUrl = proxies[i];
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      // Faster timeout (4 seconds) so we can try more proxies quickly
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const response = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Status ${response.status}`);
@@ -1003,7 +1004,7 @@ const resolveCompanyIdentity = async (ticker: string): Promise<{ name: string, e
     const results = await Promise.all(allPromises.map(p => p.catch(() => null)));
     const validResult = results.find(r => r !== null);
     if (validResult) return { name: validResult, executives: defaultExecs };
-  } catch (e) { console.warn("All API resolution attempts failed", e); }
+  } catch (e) { /* API resolution failed, using fallback */ }
 
   return { name: ticker, executives: defaultExecs };
 };
@@ -1123,7 +1124,7 @@ const fetchSocialSentiment = async (ticker: string, companyName: string, onProgr
       }
     }
     if (sentiment.reddit.count > 0) sentiment.reddit.score = sentiment.reddit.score / sentiment.reddit.count;
-  } catch (e) { console.warn("Reddit sentiment fetch failed", e); }
+  } catch (e) { /* Reddit sentiment fetch failed silently */ }
 
   if (onProgress) onProgress(`Analyzing consumer reviews for ${shortName}...`);
   
@@ -1145,7 +1146,7 @@ const fetchSocialSentiment = async (ticker: string, companyName: string, onProgr
       }
     }
     if (sentiment.reviews.count > 0) sentiment.reviews.score = sentiment.reviews.score / sentiment.reviews.count;
-  } catch (e) { console.warn("Consumer reviews fetch failed", e); }
+  } catch (e) { /* Consumer reviews fetch failed silently */ }
 
   if (onProgress) onProgress(`Checking employer sentiment for ${shortName}...`);
   
@@ -1161,7 +1162,7 @@ const fetchSocialSentiment = async (ticker: string, companyName: string, onProgr
       sentiment.employer.count++;
     }
     if (sentiment.employer.count > 0) { sentiment.employer.score = sentiment.employer.score / sentiment.employer.count; sentiment.employer.source = 'Glassdoor'; }
-  } catch (e) { console.warn("Employer sentiment fetch failed", e); }
+  } catch (e) { /* Employer sentiment fetch failed silently */ }
 
   const weights = { reddit: 0.3, reviews: 0.5, employer: 0.2 };
   let totalWeight = 0, weightedSum = 0;
@@ -1263,12 +1264,63 @@ export async function fetchAndAnalyzeTicker(ticker: string, onProgress?: (msg: s
   if (onProgress) onProgress(`Fetching social media sentiment...`);
   const socialSentimentPromise = fetchSocialSentiment(t, companyName, onProgress);
 
-  const fetchPromises = queries.map(query => query.urlOverride ? fetchRSS(query.urlOverride, query.label) : fetchRSS(`https://news.google.com/rss/search?q=${encodeURIComponent(query.q)}&hl=en-US&gl=US&ceid=US:en`, query.label));
-  const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Search timed out (exceeded 30 seconds).")), 30000));
-  const results = await Promise.race([Promise.all(fetchPromises), timeoutPromise]);
+  // Fetch all queries with individual timeouts - collect whatever succeeds
+  const fetchPromises = queries.map(query => {
+    const fetchFn = query.urlOverride 
+      ? fetchRSS(query.urlOverride, query.label) 
+      : fetchRSS(`https://news.google.com/rss/search?q=${encodeURIComponent(query.q)}&hl=en-US&gl=US&ceid=US:en`, query.label);
+    
+    // Each individual fetch has a timeout, but we don't fail the whole operation
+    return fetchFn.catch(() => [] as Element[]);
+  });
+
+  // Use Promise.allSettled to get all results, even if some fail
+  // Set a generous timeout but don't reject - just proceed with what we have
+  let results: Element[][] = [];
+  
+  const timeoutMs = 45000; // 45 seconds max
+  const resultsPromise = Promise.all(fetchPromises);
+  
+  // Race between results and timeout, but timeout just returns empty arrays for remaining
+  const timeoutPromise = new Promise<Element[][]>((resolve) => {
+    setTimeout(() => {
+      if (onProgress) onProgress(`Proceeding with available data...`);
+      resolve(queries.map(() => []));
+    }, timeoutMs);
+  });
+
+  try {
+    results = await Promise.race([resultsPromise, timeoutPromise]);
+  } catch (e) {
+    // If somehow we still get an error, just use empty results
+    results = queries.map(() => []);
+  }
+
   const allRawItems = results.flat();
 
-  if (allRawItems.length === 0) throw new Error(`No confirmed data streams found for ${t}.`);
+  // If we have no results at all, provide a minimal fallback instead of throwing
+  if (allRawItems.length === 0) {
+    if (onProgress) onProgress(`Limited data available for ${t}. Generating analysis...`);
+    // Return a minimal result rather than throwing an error
+    const fallbackResult: CompanyAnalysisResult = {
+      ticker: t,
+      companyName: companyName,
+      signal: {
+        direction: 'HOLD',
+        strength: 50,
+        confidence: 25,
+        label: 'Limited Data',
+        color: '#6B7280',
+        reasoning: `Insufficient news data available for ${companyName} (${t}). This may indicate limited recent coverage or a less frequently traded security. Consider checking directly on financial news sites for more information.`
+      },
+      news: [],
+      sentimentBreakdown: { execTone: 0, marketSentiment: 0, consumerSentiment: 0 },
+      socialSentiment: null,
+      executivesFound: identity.executives,
+      groundingChunks: []
+    };
+    return fallbackResult;
+  }
 
   if (onProgress) onProgress(`Filtering ${allRawItems.length} sources through relevance & credibility check...`);
 

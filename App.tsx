@@ -132,6 +132,12 @@ const App: React.FC = () => {
               
               {/* Left Area: Skyscraper - "The Look of Love" */}
               <div className="hidden md:flex shrink-0 flex-col">
+                <a 
+                  href="https://goodmansjewelers.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
                 <div style={{ 
                   width: '160px', 
                   minHeight: '700px', 
@@ -144,7 +150,8 @@ const App: React.FC = () => {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'flex-start',
-                  padding: '20px 10px'
+                  padding: '20px 10px',
+                  cursor: 'pointer'
                 }}>
                   
                   {/* Title - The Look of Love */}
@@ -244,7 +251,7 @@ const App: React.FC = () => {
                   <div style={{
                     width: '130px',
                     height: '100px',
-                    marginBottom: '30px',
+                    marginBottom: '0px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -257,6 +264,7 @@ const App: React.FC = () => {
                   </div>
 
                 </div>
+                </a>
               </div>
               {/* Center Area: Header + Square Ad - Fixed width to prevent shifting */}
               <div className="flex flex-col items-center w-[500px] shrink-0">
@@ -275,6 +283,12 @@ const App: React.FC = () => {
                  </div>
 
                  {/* Square Ad Box - Goodman's Jewelers Main Ad - Engraved Style */}
+                 <a 
+                   href="https://goodmansjewelers.com" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   style={{ textDecoration: 'none', color: 'inherit' }}
+                 >
                  <div style={{ 
                    border: '3px solid #5C4A3A', 
                    marginTop: '4px', 
@@ -283,7 +297,8 @@ const App: React.FC = () => {
                    width: '400px', 
                    height: '400px', 
                    background: 'linear-gradient(145deg, #F8F5F0 0%, #EDE8E0 50%, #F5F2ED 100%)',
-                   boxShadow: 'inset 0 0 80px rgba(60,45,30,0.06), 0 4px 24px rgba(60,45,30,0.2)'
+                   boxShadow: 'inset 0 0 80px rgba(60,45,30,0.06), 0 4px 24px rgba(60,45,30,0.2)',
+                   cursor: 'pointer'
                  }}>
                     <div style={{ 
                       border: '1px solid #A89070', 
@@ -664,10 +679,17 @@ const App: React.FC = () => {
                        </div>
                     </div>
                  </div>
+                 </a>
               </div>
 
               {/* Right Area: Skyscraper - "The Look of Love" */}
               <div className="hidden md:flex shrink-0 flex-col">
+                <a 
+                  href="https://goodmansjewelers.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
                 <div style={{ 
                   width: '160px', 
                   minHeight: '700px', 
@@ -680,7 +702,8 @@ const App: React.FC = () => {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'flex-start',
-                  padding: '20px 10px'
+                  padding: '20px 10px',
+                  cursor: 'pointer'
                 }}>
                   
                   {/* Title - The Look of Love */}
@@ -765,7 +788,7 @@ const App: React.FC = () => {
                   <div style={{
                     width: '140px',
                     height: '115px',
-                    marginBottom: '18px',
+                    marginBottom: '11px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -777,6 +800,7 @@ const App: React.FC = () => {
                     />
                   </div>
                 </div>
+                </a>
               </div>
 
 

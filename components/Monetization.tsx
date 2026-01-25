@@ -60,6 +60,8 @@ export const AdBanner: React.FC<AdBannerProps> = ({ variant = 'horizontal', clas
           boxSizing: 'border-box',
           background: '#fff',
           cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
         <div style={{
