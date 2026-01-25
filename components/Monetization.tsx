@@ -60,30 +60,8 @@ export const AdBanner: React.FC<AdBannerProps> = ({ variant = 'horizontal', clas
           boxSizing: 'border-box',
           background: '#fff',
           cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
         }}
       >
-        {/* SAMPLE watermark overlay */}
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%) rotate(-25deg)',
-          fontSize: '120px',
-          fontFamily: 'Arial, sans-serif',
-          fontWeight: 900,
-          color: 'rgba(150, 21, 29, 0.12)',
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          whiteSpace: 'nowrap',
-          zIndex: 10,
-        }}>
-          SAMPLE
-        </div>
-        
         <div style={{
           border: '2px solid #96151D',
           margin: '2px',
