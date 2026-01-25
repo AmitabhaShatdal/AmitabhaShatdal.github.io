@@ -128,7 +128,7 @@ const AlphaSpreadDisplay: React.FC<AlphaSpreadDisplayProps> = ({ data }) => {
              <div className="mt-8 pt-8 border-t border-slate-200 flex items-center gap-6">
                 <div className="text-center">
                    <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-bold">Raw Reality</div>
-                   <div className="text-xl font-bold text-slate-700">{(data.overallSentiment + data.consumerSentiment / 2).toFixed(2)}</div>
+                   <div className="text-xl font-bold text-slate-700">{((data.overallSentiment + data.consumerSentiment) / 2).toFixed(2)}</div>
                 </div>
                 <div className="text-xl text-slate-300 font-light italic">vs</div>
                 <div className="text-center">

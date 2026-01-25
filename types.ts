@@ -18,6 +18,34 @@ export interface NewsItem {
   link?: string;
   relevanceScore?: number;
   sourceScore?: number;
+  sourceCategory?: string; // 'News', 'Social Discussion', 'Consumer Reviews', 'Employer Reviews'
+  isVerifiedSource?: boolean; // true if passed whitelist validation
+}
+
+export interface SocialSentimentData {
+  reddit: {
+    score: number;
+    count: number;
+    mentions: Array<{ title: string; sentiment: string; subreddit?: string }>;
+  };
+  reviews: {
+    score: number;
+    count: number;
+    platforms: Record<string, { score: number; count: number }>;
+  };
+  employer: {
+    score: number;
+    count: number;
+    source: string;
+  };
+  overall: number;
+}
+
+export interface SourceStats {
+  totalProcessed: number;
+  passed: number;
+  filtered: number;
+  verifiedSources: number;
 }
 
 export interface TradingSignal {
@@ -48,6 +76,12 @@ export interface CompanyAnalysisResult {
   
   groundingLinks?: GroundingChunk[];
   signal?: TradingSignal;
+  
+  // Social sentiment data from Reddit, reviews, employer sites
+  socialSentiment?: SocialSentimentData;
+  
+  // Source filtering statistics
+  sourceStats?: SourceStats;
 }
 
 export interface GroundingChunk {

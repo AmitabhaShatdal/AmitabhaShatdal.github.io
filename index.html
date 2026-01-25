@@ -3,68 +3,158 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com; connect-src 'self' https:;">
-    <meta name="description" content="Real-time sentiment analysis of C-Suite executives vs Wall Street expectations using Natural Language Processing. Deep dive into earnings calls, social media, and news." />
-    <meta name="keywords" content="stocks, sentiment analysis, Natural Language Processing, executive analysis, finance" />
+    <meta name="description" content="Real-time sentiment analysis of C-Suite executives vs Wall Street expectations using Natural Language Processing." />
     <meta property="og:title" content="Alpha Quelle - Market vs. Management" />
     <meta property="og:description" content="Analyze the gap between what Wall Street predicts and what Executives are actually saying." />
     <meta property="og:type" content="website" />
     <title>Alpha Quelle - Market vs Management</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-      
-      :root {
-        --glass-border: rgba(255, 255, 255, 0.4);
-        --glass-surface: rgba(255, 255, 255, 0.65);
-        --dark-surface: #0f172a;
-      }
-
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f1f5f9; /* Slate 100 */
-        color: #0f172a; /* Slate 900 */
-      }
-      
-      h1, h2, h3, h4, h5, h6 {
-        font-family: 'Playfair Display', serif;
-      }
-
-      /* Custom scrollbar for webkit */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #94a3b8;
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
-      }
-      
-      .font-serif {
-        font-family: 'Playfair Display', serif;
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+    
+    <!-- Preload skyscraper ad images for faster loading -->
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/144069642">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/45885258">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/110723517">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/141877792">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/14956727">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/130681063">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/73325320?obj=metals&amp;obj=stones/faceted/g_center&amp;obj.colorRef=71&amp;obj.curves=0,0.52,110.95,200.114,220.255,255&amp;obj.curves.r=0,0.86,102.153,168.255,255&amp;obj.curves.g=0,0.61,47.91,75.150,133.255,255&amp;obj.curves.b=0,0.60,53.93,83.135,123.255,230&amp;obj=metals&amp;obj.recipe=yellow&amp;$xlarge$">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/73660057?obj=stones/diamonds/g_Accent&amp;obj=stones/faceted/g_Center&amp;obj.curves=0,0.121,215.185,255.255,255&amp;obj.curves.r=41,0.60,28.128,82.176,127.237,255.255,255&amp;obj.curves.g=22,0.128,138.248,255.255,255&amp;obj.curves.b=20,0.128,167.251,255.255,255&amp;obj=metals&amp;obj=metals&amp;obj.recipe=yellow&amp;$xlarge$">
+    <link rel="preload" as="image" href="https://goodmansjewelers.com/wp-content/uploads/al_opt_content/IMAGE/goodmansjewelers.com/wp-content/uploads/2023/04/Concourse-Hotel-Image-1-jpg-e1685202917380.webp">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/98813701?obj=metals&amp;obj.recipe=yellow&amp;obj=stones&amp;obj.curves=0,3.56,28.216,201.255,255&amp;obj.curves.r=0,26.198,244.255,255&amp;obj.curves.g=29,0.192,135.243,226.255,255&amp;obj.curves.b=31,0.78,22.196,213.255,255&amp;$">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/126821436?obj=stones/diamonds/g_Accent%201&amp;obj=stones/diamonds/g_Accent%202&amp;obj=stones/diamonds/g_Center&amp;obj=metals&amp;obj.recipe=yellow&amp;$">
+  </head>
   <body>
-    <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <a href="index.html" class="logo">
+          <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="logo-text" style="font-style: italic; letter-spacing: 0.05em;">AQ</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+      
+      <!-- Hero (static) -->
+      <div id="static-hero" class="hero">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>Real-time Intelligence</span>
+        </div>
+        <h1 class="title">
+          Alpha Quelle
+        </h1>
+        <p class="tagline">
+          Stay informed like the Wall Street traders.
+        </p>
+      </div>
+
+      <!-- Search (static) -->
+      <div id="static-search" class="search-container">
+        <form id="search-form" class="search-wrapper">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            id="ticker-input"
+            class="search-input"
+            placeholder="Enter ticker symbol..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit" id="search-btn" class="search-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </form>
+
+        <div class="trending">
+          <span class="trending-label">Trending:</span>
+          <button type="button" class="ticker-btn" data-ticker="AAPL">AAPL</button>
+          <button type="button" class="ticker-btn" data-ticker="MSFT">MSFT</button>
+          <button type="button" class="ticker-btn" data-ticker="GOOGL">GOOGL</button>
+          <button type="button" class="ticker-btn" data-ticker="NVDA">NVDA</button>
+          <button type="button" class="ticker-btn" data-ticker="TSLA">TSLA</button>
+        </div>
+      </div>
+
+      <!-- UWCU Advertisement -->
+      <div id="static-ad" class="ad-container">
+        <div class="uwcu-ad">
+          <div class="uwcu-ad-inner">
+            <div class="uwcu-ad-content">
+              <div class="uwcu-quote">"If you would be wealthy, think of saving as well as getting."</div>
+              <div class="uwcu-attribution">—BENJAMIN FRANKLIN</div>
+              <div class="uwcu-divider"></div>
+              <div>No fees. No stress. Your Campus Package.</div>
+              <div class="uwcu-tagline">Member-owned since 1931.</div>
+              <a href="https://www.uwcu.org" target="_blank" class="uwcu-logo-link">
+                <svg viewBox="0 0 127.42 55.33" xmlns="http://www.w3.org/2000/svg" class="uwcu-logo">
+                  <path d="M27.66,0H0V27.56H0v.1A27.67,27.67,0,1,0,27.66,0Z" fill="#868686"></path>
+                  <path d="M29.21,21.21H25.42V12.32H41.77V33.24a1.2,1.2,0,0,0,1.33,1.32h2.28v9H34.32c-2.95,0-4.51-1.32-4.51-3.85a11.48,11.48,0,0,1,.12-1.5h-.12s-2,6.07-9.92,6.07c-5.17,0-10.4-2.58-10.4-11.54V21.21H5.7V12.32H22.05V30.47c0,2.11.72,2.83,2.29,2.83,3.3,0,4.87-3.61,4.87-7.58Z" fill="#fff"></path>
+                  <path d="M61.93,6.39H60.38V3.63h5.38v6.79c0,1.07.42,1.51,1.27,1.51,1.5,0,2.37-1.75,2.37-3.48V6.39H67.85V3.63h5.38v8.15a.43.43,0,0,0,.48.48h1V15H71.15c-1.05,0-1.58-.51-1.58-1.28v-.31a2.43,2.43,0,0,1,0-.34h0a4.13,4.13,0,0,1-3.88,2.2c-2,0-3.74-1.07-3.74-4.28Z" fill="#54565a"></path>
+                  <path d="M75.11,3.63h6.07V6.39H80.05l.84,4a13.42,13.42,0,0,1,.18,1.5h.09a9,9,0,0,1,.17-1.5l1.58-6.73h3.27l1.58,6.73a9,9,0,0,1,.17,1.5H88a13.42,13.42,0,0,1,.18-1.5l.84-4H87.91V3.63H94V6.39H92.67L90.5,15H86.07L84.79,9.76a7.93,7.93,0,0,1-.2-1.51H84.5a7.93,7.93,0,0,1-.2,1.51L83,15H78.59L76.42,6.39H75.11Z" fill="#54565a"></path>
+                  <path d="M66.72,21.19c2.28,0,5,.79,5,2.9V25.9H68.49v-.68c0-.56-.73-.85-1.62-.85a2.37,2.37,0,0,0-2.55,2.68A2.67,2.67,0,0,0,67.2,30a5.81,5.81,0,0,0,3.44-1.27l1.28,2.68a7.59,7.59,0,0,1-5,1.75c-3.39,0-6.49-2.21-6.49-5.93A6,6,0,0,1,66.72,21.19Z" fill="#54565a"></path>
+                  <path d="M73.07,30.09h1.55V24.71a.44.44,0,0,0-.48-.49H73.07V21.45h3.61c1,0,1.62.42,1.62,1.46v.6a2.88,2.88,0,0,1,0,.58h0a4,4,0,0,1,3.63-2.84,2.28,2.28,0,0,1,.44.05v3.76A4.47,4.47,0,0,0,81.6,25c-2.13,0-3.15,1.35-3.15,3.43v1.66H80v2.77H73.07Z" fill="#54565a"></path>
+                  <path d="M89,21.19c3.42,0,5.32,2.34,5.32,5.51,0,.38-.09,1.15-.09,1.15H87A2.55,2.55,0,0,0,89.62,30a6.34,6.34,0,0,0,3.21-1.09l1.39,2.66a7.92,7.92,0,0,1-4.91,1.59,5.91,5.91,0,0,1-6.27-6A5.67,5.67,0,0,1,89,21.19Zm1.36,4.56a1.56,1.56,0,0,0-1.44-1.68,1.87,1.87,0,0,0-1.84,1.68Z" fill="#54565a"></path>
+                  <path d="M100.54,21.19a3.38,3.38,0,0,1,2.92,1.13h0s0-.31,0-.74V19.79h-1.55V17h5.38V29.6a.45.45,0,0,0,.49.49h.84v2.77h-3.3c-1.11,0-1.53-.64-1.53-1.2V31.6a1.34,1.34,0,0,1,0-.36h0a3.75,3.75,0,0,1-3.52,1.88c-3,0-5-2.43-5-5.95S97.39,21.19,100.54,21.19Zm.79,8.77c1.16,0,2.26-.87,2.26-2.71,0-1.5-.73-2.83-2.19-2.83-1.26,0-2.28,1-2.28,2.75S100,30,101.33,30Z" fill="#54565a"></path>
+                  <path d="M110.24,30.09h1.44V24.22h-1.55V21.45h5.38v8.64H117v2.77h-6.71ZM111.72,17h3.74v3h-3.74Z" fill="#54565a"></path>
+                  <path d="M119.05,24.22H117.5V21.45h1.66V18.37h3.72v3.08h2.4v2.77h-2.4v4c0,1.37,1.31,1.57,2,1.57.31,0,.51,0,.51,0v3.1a7,7,0,0,1-1,.07c-1.82,0-5.34-.49-5.34-4.32Z" fill="#54565a"></path>
+                  <path d="M61.93,42.65H60.38V39.88h5.38v6.8c0,1.06.42,1.51,1.27,1.51,1.5,0,2.37-1.75,2.37-3.48V42.65H67.85V39.88h5.38V48a.44.44,0,0,0,.48.49h1v2.77H71.15c-1.05,0-1.58-.51-1.58-1.29v-.31a2.39,2.39,0,0,1,0-.33h0a4.13,4.13,0,0,1-3.88,2.19c-2,0-3.74-1.06-3.74-4.27Z" fill="#54565a"></path>
+                  <path d="M76,48.52h1.44V43.14a.45.45,0,0,0-.49-.49H75.84V39.88h3.63c1,0,1.58.51,1.58,1.29v.37a1.84,1.84,0,0,1,0,.27h0a4.19,4.19,0,0,1,3.87-2.19c2.15,0,3.86,1.06,3.86,4.27v4.63h1.44v2.77H85V44.6c0-1.06-.43-1.51-1.29-1.51-1.7,0-2.46,1.78-2.46,3.37v2.06h1.44v2.77H76Z" fill="#54565a"></path>
+                  <path d="M91.59,48.52H93V42.65H91.48V39.88h5.38v8.64H98.3v2.77H91.59Zm1.48-13.07h3.74v3H93.07Z" fill="#54565a"></path>
+                  <path d="M105.43,39.62c3.61,0,6.49,2.41,6.49,6s-2.88,5.93-6.47,5.93S99,49.18,99,45.62,101.86,39.62,105.43,39.62Zm0,8.74A2.57,2.57,0,0,0,108,45.62a2.6,2.6,0,1,0-5.18,0A2.58,2.58,0,0,0,105.45,48.36Z" fill="#54565a"></path>
+                  <path d="M113.14,48.52h1.44V43.14a.45.45,0,0,0-.49-.49H113V39.88h3.63c1,0,1.57.51,1.57,1.29v.37c0,.11,0,.27,0,.27h0a4.21,4.21,0,0,1,3.88-2.19c2.15,0,3.85,1.06,3.85,4.27v4.63h1.44v2.77h-5.27V44.6c0-1.06-.42-1.51-1.28-1.51-1.71,0-2.46,1.78-2.46,3.37v2.06h1.44v2.77h-6.71Z" fill="#54565a"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- React mounts here -->
+      <div id="root"></div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <p class="footer-copy">&copy; <span id="year"></span> Alpha Quelle. All rights reserved.</p>
+        <nav class="footer-nav">
+          <a href="privacy.html" class="footer-link">Privacy</a>
+          <a href="methodology.html" class="footer-link">Methodology</a>
+          <a href="about.html" class="footer-link">About</a>
+          <a href="contact.html" class="footer-link">Contact</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+    
+    <!-- Hidden preloaded images for skyscraper ads - loads immediately with page -->
+    <div style="position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;" aria-hidden="true">
+      <img src="https://meteor.stullercloud.com/das/144069642" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/45885258" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/110723517" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/141877792" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/14956727" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/130681063" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/73325320?obj=metals&obj=stones/faceted/g_center&obj.colorRef=71&obj.curves=0,0.52,110.95,200.114,220.255,255&obj.curves.r=0,0.86,102.153,168.255,255&obj.curves.g=0,0.61,47.91,75.150,133.255,255&obj.curves.b=0,0.60,53.93,83.135,123.255,230&obj=metals&obj.recipe=yellow&$xlarge$" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/73660057?obj=stones/diamonds/g_Accent&obj=stones/faceted/g_Center&obj.curves=0,0.121,215.185,255.255,255&obj.curves.r=41,0.60,28.128,82.176,127.237,255.255,255&obj.curves.g=22,0.128,138.248,255.255,255&obj.curves.b=20,0.128,167.251,255.255,255&obj=metals&obj=metals&obj.recipe=yellow&$xlarge$" alt="" width="1" height="1">
+      <img src="https://goodmansjewelers.com/wp-content/uploads/al_opt_content/IMAGE/goodmansjewelers.com/wp-content/uploads/2023/04/Concourse-Hotel-Image-1-jpg-e1685202917380.webp" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/98813701?obj=metals&obj.recipe=yellow&obj=stones&obj.curves=0,3.56,28.216,201.255,255&obj.curves.r=0,26.198,244.255,255&obj.curves.g=29,0.192,135.243,226.255,255&obj.curves.b=31,0.78,22.196,213.255,255&$" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/126821436?obj=stones/diamonds/g_Accent%201&obj=stones/diamonds/g_Accent%202&obj=stones/diamonds/g_Center&obj=metals&obj.recipe=yellow&$" alt="" width="1" height="1">
+    </div>
+    
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

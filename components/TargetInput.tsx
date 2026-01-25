@@ -75,7 +75,7 @@ const TargetInput: React.FC<TargetInputProps> = ({ onSearch, status }) => {
               text-[10px] font-bold tracking-wide text-slate-500
               bg-white/50 backdrop-blur-sm border border-white/60
               shadow-sm
-              hover:bg-white hover:text-indigo-600 hover:border-indigo-100 hover:shadow-md hover:-translate-y-0.5
+              hover:bg-white hover:text-indigo-600 hover:border-indigo-100 hover:shadow-md
               active:scale-95 active:shadow-inner
               transition-all duration-200 ease-out
               disabled:opacity-50 disabled:cursor-not-allowed

@@ -1,4 +1,4 @@
-import { CompanyAnalysisResult, NewsItem, Executive, TradingSignal, GroundingChunk } from "../types";
+import { CompanyAnalysisResult, NewsItem, Executive, TradingSignal, GroundingChunk, SocialSentimentData } from "../types";
 
 // --- CONFIGURATION & LEXICONS ---
 
@@ -52,7 +52,7 @@ const EXEC_TONE_LEXICON: Record<string, number> = {
   "unlocked": 2.5, "positioned": 2.0, "trajectory": 1.5, "evolution": 2.0,
   "visibility": 2.0, "clarity": 2.0, "bullish": 2.5,
 
-  // Action Verbs (New Addition for Tech/Growth Companies)
+  // Action Verbs
   "announce": 1.5, "announces": 1.5, "announced": 1.5,
   "unveil": 2.0, "unveils": 2.0, "unveiled": 2.0,
   "launch": 2.0, "launches": 2.0, "launched": 2.0,
@@ -66,7 +66,7 @@ const EXEC_TONE_LEXICON: Record<string, number> = {
   "approve": 2.0, "approved": 2.0, "approval": 2.0,
   "secured": 2.0,
 
-  // Evasive / Cautionary (The "Non-Answer" Penalties)
+  // Evasive / Cautionary
   "headwind": -2.5, "challenge": -2.0, "uncertain": -2.5, "uncertainty": -2.5,
   "volatile": -2.0, "volatility": -2.0, "pressure": -2.0, "soft": -2.0, "softness": -2.0,
   "weak": -2.5, "weakness": -2.5, "cautious": -2.0, "prudent": -0.5, "conservative": -1.0,
@@ -78,9 +78,8 @@ const EXEC_TONE_LEXICON: Record<string, number> = {
   "delayed": -2.0, "delay": -2.0, "pause": -1.5, "halted": -2.5
 };
 
-// 3. WALL STREET / ANALYST JARGON (The "External" Voice)
+// 3. WALL STREET / ANALYST JARGON
 const WALL_ST_LEXICON: Record<string, number> = {
-  // Bullish Signals
   "buy": 2.5, "strong buy": 3.5, "conviction buy": 4.0, "top pick": 3.5,
   "overweight": 2.5, "outperform": 3.0, "accumulate": 2.5, "add": 2.0,
   "upgrade": 3.5, "boost": 2.5, "hike": 2.5, "raise": 2.5,
@@ -89,7 +88,6 @@ const WALL_ST_LEXICON: Record<string, number> = {
   "beat": 3.0, "smash": 3.5, "exceed": 2.5, "recovery": 2.0, "rebound": 2.0,
   "undervalued": 3.0, "cheap": 2.0, "attractive": 2.5, "premium": 1.0,
   
-  // Bearish Signals
   "sell": -3.0, "strong sell": -4.0, "underweight": -2.5, "underperform": -3.0,
   "reduce": -2.0, "avoid": -3.0, "downgrade": -3.5, "cut": -3.0, "slash": -3.5,
   "trim": -1.5, "downside": -2.5, "risk": -1.5, "breakdown": -3.0, "crash": -4.0,
@@ -98,21 +96,18 @@ const WALL_ST_LEXICON: Record<string, number> = {
   "overvalued": -3.0, "expensive": -2.0, "rich": -1.5, "bubble": -3.5,
   "correction": -2.0, "retreat": -1.5, "sell-off": -2.5, "liquidation": -3.0,
   
-  // Neutral / Soft Signals
   "hold": 0.0, "neutral": -0.5, "equal-weight": 0.0, "market perform": -0.5,
   "sector perform": -0.5, "peer perform": -0.5, "in-line": 0.0
 };
 
-// 4. CONSUMER PHRASES (Multi-word identifiers for product/service quality)
+// 4. CONSUMER PHRASES
 const CONSUMER_PHRASES: Record<string, number> = {
-  // High Praise
   "game changer": 4.0, "highly recommend": 3.5, "must buy": 3.5, "value for money": 3.0,
   "best in class": 3.5, "top tier": 3.0, "user friendly": 2.5, "seamless experience": 3.0,
   "great support": 3.0, "excellent service": 3.0, "works perfectly": 3.0, "exceeded expectations": 3.5,
   "fan favorite": 2.5, "cult following": 2.5, "sold out": 3.0, "bang for buck": 3.0,
   "easy to use": 3.0, "lasts all day": 3.0, "worth every penny": 4.0, "build quality": 2.0,
   
-  // Severe Criticism & Crisis
   "waste of money": -4.0, "do not buy": -4.0, "rip off": -4.0, "stay away": -4.0,
   "worst experience": -4.0, "terrible service": -3.5, "hidden fees": -3.5, "predatory pricing": -4.0,
   "data breach": -5.0, "security flaw": -4.0, "privacy concerns": -3.0, "class action": -4.0,
@@ -124,7 +119,7 @@ const CONSUMER_PHRASES: Record<string, number> = {
   "hard to use": -3.0, "would not recommend": -4.0
 };
 
-// 5. INSIDER TRADING / ACTIONS (Highest Conviction Signal)
+// 5. INSIDER TRADING / ACTIONS
 const INSIDER_PHRASES: Record<string, number> = {
   "insider buying": 4.5, "bought shares": 4.0, "purchased shares": 4.0, 
   "insider purchase": 4.0, "cluster buy": 4.5, "increased stake": 3.5,
@@ -197,9 +192,21 @@ const NEGATIONS = new Set([
 const NOISE_PATTERNS = [
   /\bpooling\b/i, /\btalent pool\b/i, /\bgene pool\b/i, /\bdead pool\b/i, 
   /\bcar pool\b/i, /\bprize pool\b/i, /\bmining pool\b/i, /\bdark pool\b/i,
-  /\bswimming pool\b/i, 
-  /\bcash flow\b/i, /\bcash back\b/i,
+  /\bswimming pool\b/i, /\bcash flow\b/i, /\bcash back\b/i,
   /\bgap in\b/i, /\bgap between\b/i
+];
+
+// Patterns that indicate the stock mention is peripheral (related articles, trending, etc.)
+// Only very clear indicators of peripheral mentions
+const PERIPHERAL_MENTION_PATTERNS = [
+  /related\s+stocks?\s+to\s+watch/i,
+  /see\s+also:\s/i,
+  /you\s+(may|might)\s+also\s+(like|enjoy)/i,
+  /more\s+stories\s+like\s+this/i,
+  /recommended\s+for\s+you/i,
+  /in\s+other\s+news:\s/i,
+  /top\s+\d+\s+(gainers|losers)\s+today/i,
+  /biggest\s+(gainers|losers)\s+of\s+the\s+day/i
 ];
 
 const GENERIC_COMMON_WORDS = new Set([
@@ -207,8 +214,126 @@ const GENERIC_COMMON_WORDS = new Set([
   'GAP', 'NOW', 'OUT', 'GPS', 'KEY', 'SPOT', 'RUN', 'EAT', 'PLAY', 'CORN', 'CAR',
   'CARE', 'GOOD', 'OPEN', 'LIFE', 'GOLD', 'SAVE', 'TARGET', 'MACY', 'DELL', 'HP',
   'VISA', 'BLOCK', 'SQUARE', 'MATCH', 'UBER', 'LYFT', 'ZOOM', 'SNAP', 'BOX', 'FIVE',
-  'EBS', 'RH', 'ON', 'NET', 'BILL', 'LULU', 'CROX', 'BOOT', 'DECK', 'OSTK'
+  'EBS', 'RH', 'ON', 'NET', 'BILL', 'LULU', 'CROX', 'BOOT', 'DECK', 'OSTK',
+  // Additional short/ambiguous tickers
+  'BKE', 'SIX', 'TWO', 'ARE', 'IT', 'SO', 'AN', 'OR', 'GO', 'BE', 'DO', 'UP',
+  'AIR', 'SEE', 'FUN', 'SUN', 'SKY', 'ICE', 'OIL', 'GAS', 'LEG', 'ARM', 'EYE',
+  'MAN', 'KID', 'CAT', 'DOG', 'PIG', 'COW', 'BEE', 'ANT', 'FLY', 'BAT', 'OWL',
+  'DAY', 'BAR', 'CAB', 'JOB', 'LOW', 'OLD', 'NEW', 'BIG', 'ODD', 'FIT', 'FAT',
+  'HOT', 'WET', 'DRY', 'RAW', 'LOW', 'CUT', 'HIT', 'WIN', 'PAY', 'SAY', 'TRY'
 ]);
+
+// Common abbreviations/acronyms that could conflict with tickers
+const AMBIGUOUS_ABBREVIATIONS: Record<string, string[]> = {
+  'BKE': ['bukit timah expressway', 'bke expressway', 'bke highway'],
+  'GPS': ['global positioning system', 'gps tracking', 'gps navigation'],
+  'CAR': ['central african republic', 'car accident', 'car crash'],
+  'AIR': ['air quality', 'air pollution', 'airline'],
+  'GAS': ['natural gas', 'gas prices', 'gasoline'],
+  'OIL': ['crude oil', 'oil prices', 'oil spill']
+};
+
+// Subsidiary and brand mapping for major holding companies
+// Maps ticker to array of subsidiary names/brands to include in searches
+// NOTE: Only include distinctive brand names, not generic words (e.g., no "Chrome", "Windows", "Java")
+const SUBSIDIARY_BRANDS: Record<string, string[]> = {
+  // Alphabet/Google
+  'GOOG': ['Google', 'YouTube', 'Waymo', 'DeepMind', 'Fitbit', 'Waze', 'Google Cloud', 'Google Maps', 'Gmail', 'Google Search', 'Google Pixel', 'Chromebook'],
+  'GOOGL': ['Google', 'YouTube', 'Waymo', 'DeepMind', 'Fitbit', 'Waze', 'Google Cloud', 'Google Maps', 'Gmail', 'Google Search', 'Google Pixel', 'Chromebook'],
+  // Meta/Facebook
+  'META': ['Facebook', 'Instagram', 'WhatsApp', 'Meta Threads', 'Messenger', 'Oculus', 'Meta Quest', 'Reality Labs'],
+  // Amazon
+  'AMZN': ['Amazon', 'AWS', 'Amazon Web Services', 'Prime Video', 'Whole Foods', 'Twitch', 'Amazon Alexa', 'Kindle', 'Amazon Prime', 'Amazon Ring'],
+  // Apple
+  'AAPL': ['Apple', 'iPhone', 'iPad', 'MacBook', 'Apple Watch', 'AirPods', 'Apple TV', 'App Store', 'Apple Music', 'iCloud', 'Apple Vision Pro', 'Apple Mac'],
+  // Microsoft
+  'MSFT': ['Microsoft', 'Microsoft Azure', 'Office 365', 'LinkedIn', 'GitHub', 'Xbox', 'Microsoft Bing', 'Microsoft Teams', 'Microsoft Outlook', 'Microsoft Copilot', 'Microsoft Windows'],
+  // Tesla
+  'TSLA': ['Tesla', 'Tesla Model S', 'Tesla Model 3', 'Tesla Model X', 'Tesla Model Y', 'Cybertruck', 'Tesla Powerwall', 'Tesla Supercharger', 'Full Self-Driving', 'Tesla FSD'],
+  // NVIDIA
+  'NVDA': ['NVIDIA', 'GeForce', 'NVIDIA RTX', 'NVIDIA CUDA', 'NVIDIA Tegra', 'NVIDIA Jetson', 'NVIDIA DGX', 'NVIDIA H100', 'NVIDIA A100'],
+  // Berkshire Hathaway
+  'BRK.A': ['Berkshire Hathaway', 'GEICO', 'Dairy Queen', 'Duracell', 'BNSF Railway'],
+  'BRK.B': ['Berkshire Hathaway', 'GEICO', 'Dairy Queen', 'Duracell', 'BNSF Railway'],
+  // Disney
+  'DIS': ['Disney', 'Marvel Studios', 'Pixar', 'Lucasfilm', 'ESPN', 'Hulu', 'Disney Plus', 'Disney+'],
+  // Netflix
+  'NFLX': ['Netflix'],
+  // Walmart
+  'WMT': ['Walmart', 'Sam\'s Club'],
+  // JPMorgan
+  'JPM': ['JPMorgan', 'JPMorgan Chase', 'JP Morgan', 'J.P. Morgan'],
+  // Visa
+  'V': ['Visa'],
+  // Johnson & Johnson
+  'JNJ': ['Johnson & Johnson', 'J&J', 'Tylenol', 'Band-Aid', 'Neutrogena'],
+  // Procter & Gamble
+  'PG': ['Procter & Gamble', 'P&G', 'Pampers', 'Gillette', 'Oral-B'],
+  // Coca-Cola
+  'KO': ['Coca-Cola', 'Coca Cola'],
+  // PepsiCo
+  'PEP': ['PepsiCo', 'Pepsi', 'Gatorade', 'Frito-Lay', 'Doritos', 'Cheetos', 'Quaker Oats', 'Tropicana'],
+  // AT&T
+  'T': ['AT&T', 'DirecTV'],
+  // Verizon
+  'VZ': ['Verizon', 'Verizon Wireless', 'Verizon Fios'],
+  // Comcast
+  'CMCSA': ['Comcast', 'Xfinity', 'NBCUniversal', 'Peacock', 'Universal Pictures'],
+  // Adobe
+  'ADBE': ['Adobe', 'Adobe Photoshop', 'Adobe Illustrator', 'Adobe Premiere', 'Adobe Acrobat', 'Adobe Creative Cloud', 'Figma'],
+  // Salesforce
+  'CRM': ['Salesforce', 'Slack', 'Tableau'],
+  // Oracle
+  'ORCL': ['Oracle', 'Oracle Cloud', 'NetSuite'],
+  // Intel
+  'INTC': ['Intel', 'Intel Core', 'Intel Xeon', 'Mobileye'],
+  // AMD
+  'AMD': ['AMD', 'AMD Ryzen', 'AMD Radeon', 'AMD EPYC', 'Xilinx'],
+  // Uber
+  'UBER': ['Uber', 'Uber Eats', 'Uber Freight'],
+  // Airbnb
+  'ABNB': ['Airbnb'],
+  // Spotify
+  'SPOT': ['Spotify'],
+  // PayPal
+  'PYPL': ['PayPal', 'Venmo'],
+  // Block (Square)
+  'SQ': ['Block Inc', 'Square', 'Cash App', 'Afterpay'],
+  // Snap
+  'SNAP': ['Snapchat', 'Snap Inc'],
+  // Pinterest
+  'PINS': ['Pinterest'],
+  // Zoom
+  'ZM': ['Zoom Video', 'Zoom Communications'],
+  // Shopify
+  'SHOP': ['Shopify'],
+  // Roblox
+  'RBLX': ['Roblox'],
+  // Unity
+  'U': ['Unity Technologies', 'Unity Software'],
+  // Electronic Arts
+  'EA': ['Electronic Arts', 'EA Sports', 'Apex Legends'],
+  // Activision (now part of MSFT but keeping for reference)
+  'ATVI': ['Activision Blizzard', 'Call of Duty', 'World of Warcraft', 'Overwatch', 'Diablo'],
+  // Take-Two
+  'TTWO': ['Take-Two Interactive', 'Rockstar Games', 'Grand Theft Auto', '2K Games'],
+  // Sony (ADR)
+  'SONY': ['Sony', 'PlayStation', 'Sony Pictures', 'Sony Music'],
+  // Toyota
+  'TM': ['Toyota', 'Lexus'],
+  // Ford
+  'F': ['Ford', 'Ford Motor', 'Lincoln', 'Ford F-150', 'Ford Mustang'],
+  // General Motors
+  'GM': ['General Motors', 'Chevrolet', 'Cadillac', 'GMC', 'Buick', 'Cruise'],
+  // Starbucks
+  'SBUX': ['Starbucks'],
+  // McDonald's
+  'MCD': ['McDonald\'s', 'McDonalds'],
+  // Nike
+  'NKE': ['Nike', 'Air Jordan', 'Converse'],
+  // Lululemon
+  'LULU': ['Lululemon', 'lululemon athletica']
+};
 
 const FINANCIAL_CONTEXT_WORDS = [
   'stock', 'shares', 'market', 'nasdaq', 'nyse', 'dividend', 'earnings', 'revenue',
@@ -217,90 +342,342 @@ const FINANCIAL_CONTEXT_WORDS = [
   'overweight', 'eps', 'ebitda', 'margin', 'securities', 'ticker'
 ];
 
-// --- SOURCES ---
+// ============================================================================
+// COMPREHENSIVE REPUTABLE NEWS SOURCE WHITELIST
+// Only whitelisted sources will be included in analysis
+// ============================================================================
 
-const FINANCIAL_MAJORS = [
-  "site:reuters.com", "site:bloomberg.com", "site:cnbc.com", "site:wsj.com",
-  "site:ft.com", "site:marketwatch.com", "site:barrons.com", "site:forbes.com",
-  "site:investors.com", "site:thestreet.com", "site:benzinga.com", "site:fool.com",
-  "site:seekingalpha.com", "site:tipranks.com", "site:finance.yahoo.com"
+// TIER 1: WIRE SERVICES & PREMIUM (Score: 10)
+const WIRE_SERVICES = ['apnews.com', 'reuters.com', 'afp.com', 'upi.com'];
+
+const PREMIUM_FINANCIAL = [
+  'wsj.com', 'ft.com', 'bloomberg.com', 'barrons.com', 'economist.com',
+  'marketwatch.com', 'investors.com', 'morningstar.com'
 ];
 
-const GLOBAL_MAJORS = [
-  "site:bbc.com", "site:nytimes.com", "site:washingtonpost.com", 
-  "site:theguardian.com", "site:economist.com", "site:usatoday.com", 
-  "site:apnews.com", "site:npr.org", "site:politico.com"
+const PREMIUM_NATIONAL = [
+  'nytimes.com', 'washingtonpost.com', 'usatoday.com', 'npr.org', 'pbs.org',
+  'theatlantic.com', 'newyorker.com', 'csmonitor.com'
 ];
 
-const REGIONAL_SOURCES = [
-  "site:nikkei.com", "site:scmp.com", "site:straitstimes.com", 
-  "site:afr.com", "site:smh.com.au", 
-  "site:dw.com", "site:france24.com", "site:euronews.com", 
-  "site:timesofindia.indiatimes.com", "site:hindustantimes.com", 
-  "site:aljazeera.com", "site:jpost.com",
-  "site:torontosun.com", "site:financialpost.com"
+// TIER 2: MAJOR US NEWSPAPERS (Score: 9)
+const MAJOR_US_NEWSPAPERS = [
+  'latimes.com', 'chicagotribune.com', 'bostonglobe.com', 'sfchronicle.com',
+  'dallasnews.com', 'houstonchronicle.com', 'denverpost.com', 'seattletimes.com',
+  'startribune.com', 'ajc.com', 'tampabay.com', 'mercurynews.com', 
+  'sandiegouniontribune.com', 'philly.com', 'inquirer.com', 'baltimoresun.com',
+  'oregonlive.com', 'post-gazette.com', 'dispatch.com', 'jsonline.com',
+  'stltoday.com', 'kansascity.com', 'indystar.com', 'courier-journal.com',
+  'tennessean.com', 'charlotteobserver.com', 'newsobserver.com', 'sacbee.com',
+  'reviewjournal.com', 'sun-sentinel.com', 'miamiherald.com', 'orlandosentinel.com',
+  'azcentral.com', 'freep.com', 'detroitnews.com', 'cleveland.com', 'cincinnati.com',
+  'nj.com', 'newsday.com', 'nydailynews.com', 'nypost.com', 'suntimes.com',
+  'chron.com', 'expressnews.com', 'star-telegram.com', 'statesman.com',
+  'pilotonline.com', 'richmond.com', 'deseret.com', 'sltrib.com'
 ];
 
-const GRASSROOTS_SOURCES = [
-  "site:reddit.com", "site:trustpilot.com", "site:glassdoor.com"
+// TIER 3: REGIONAL US NEWSPAPERS (Score: 8)
+const REGIONAL_US_NEWSPAPERS = [
+  'postandcourier.com', 'providencejournal.com', 'hartfordcourant.com', 'courant.com',
+  'telegram.com', 'masslive.com', 'nhregister.com', 'unionleader.com', 'concordmonitor.com',
+  'pressherald.com', 'bangordailynews.com', 'burlingtonfreepress.com', 'vtdigger.org',
+  'timesunion.com', 'buffalonews.com', 'democratandchronicle.com', 'syracuse.com',
+  'pressconnects.com', 'lohud.com', 'northjersey.com', 'app.com', 'delawareonline.com',
+  'pennlive.com', 'mcall.com', 'triblive.com', 'jacksonville.com', 'savannahnow.com',
+  'thestate.com', 'greenvilleonline.com', 'greensboro.com', 'wral.com', 'dailypress.com',
+  'roanoke.com', 'commercialappeal.com', 'knoxnews.com', 'kentucky.com', 'al.com',
+  'montgomeryadvertiser.com', 'clarionledger.com', 'nola.com', 'theadvocate.com',
+  'arkansasonline.com', 'wvgazettemail.com', 'dailyherald.com', 'sj-r.com', 'pantagraph.com',
+  'akronbeaconjournal.com', 'mlive.com', 'jconline.com', 'courierpress.com', 'madison.com',
+  'twincities.com', 'desmoinesregister.com', 'qctimes.com', 'thegazette.com', 'omaha.com',
+  'journalstar.com', 'argusleader.com', 'inforum.com', 'bismarcktribune.com', 'kansas.com',
+  'ljworld.com', 'tucson.com', 'abqjournal.com', 'oklahoman.com', 'tulsaworld.com', 'rgj.com',
+  'ocregister.com', 'fresnobee.com', 'spokesman.com', 'thenewstribune.com', 'registerguard.com',
+  'statesmanjournal.com', 'gazette.com', 'coloradosun.com', 'idahostatesman.com',
+  'billingsgazette.com', 'missoulian.com', 'adn.com', 'staradvertiser.com', 'sfexaminer.com',
+  // Additional Midwest/Plains papers
+  'pjstar.com', 'nwitimes.com', 'journalgazette.net', 'southbendtribune.com', 'heraldtimesonline.com',
+  'kearneyhub.com', 'theindependent.com', 'nptelegraph.com', 'columbustelegram.com',
+  'fremonttribune.com', 'norfolkdailynews.com', 'siouxcityjournal.com', 'globegazette.com',
+  'hutchnews.com', 'gctelegram.com', 'herald-review.com', 'jg-tc.com', 'newstrib.com',
+  'qconline.com', 'news-gazette.com', 'rrstar.com', 'galesburg.com', 'pekintimes.com',
+  'saukvalley.com', 'starcourier.com', 'whig.com', 'myjournalcourier.com',
+  // Additional Indiana papers
+  'therepublic.com', 'tribstar.com', 'pharostribune.com', 'kokomotribune.com',
+  'chronicle-tribune.com', 'elkharttruth.com', 'gabortoday.com', 'reporter-times.com'
 ];
 
-// EXPANDED HIGH TRUST LIST
-const TRUSTED_DOMAINS = [
-  'theatlantic.com', 'nationalgeographic.com', 'scientificamerican.com', 'bbc.com', 'bbc.co.uk',
-  'abc.net.au', 'apnews.com', 'nytimes.com', 'wsj.com', 'reuters.com', 'bloomberg.com',
-  'buenosairesherald.com', 'ctvnews.ca', 'theglobeandmail.com', 'postandcourier.com',
-  'thetimes.co.uk', 'lemonde.fr', 'ians.in', 'nhk.or.jp', 'asia.nikkei.com', 'japantimes.co.jp',
-  'mainichi.jp', 'yomiuri.co.jp', 'saturdayeveningpost.com', 'nation.africa', 'koreaherald.com',
-  'koreatimes.co.kr', 'timesofmalta.com', 'upi.com', 'theguardian.com', 'saipantribune.com',
-  'ansa.it', 'dw.com', 'indianexpress.com', 'ft.com', 'straitstimes.com', 'manilatimes.net',
-  'scotsman.com', 'ukrinform.net', 'afp.com', 'barrons.com', 'rferl.org', 'euronews.com',
-  'france24.com', 'vrt.be', 'world.kbs.co.kr', 'rfi.fr', 'news.err.ee', 'yle.fi', 
-  'radionz.co.nz', 'npr.org', 'politico.com', 'pbs.org', 'economist.com'
+// TIER 1: PREMIUM INTERNATIONAL (Score: 10)
+const PREMIUM_INTERNATIONAL = [
+  'bbc.com', 'bbc.co.uk', 'theguardian.com', 'telegraph.co.uk', 'thetimes.co.uk',
+  'independent.co.uk', 'thescotsman.com', 'irishtimes.com', 'lemonde.fr', 'lefigaro.fr',
+  'dw.com', 'spiegel.de', 'handelsblatt.com', 'faz.net', 'zeit.de', 'nzz.ch', 'swissinfo.ch',
+  'ansa.it', 'corriere.it', 'repubblica.it', 'elpais.com', 'elmundo.es', 'publico.pt',
+  'dutchnews.nl', 'standaard.be', 'vrt.be', 'svt.se', 'yle.fi', 'nrk.no', 'dr.dk',
+  'euronews.com', 'politico.eu', 'france24.com', 'rfi.fr', 'nikkei.com', 'asia.nikkei.com',
+  'japantimes.co.jp', 'mainichi.jp', 'yomiuri.co.jp', 'scmp.com', 'straitstimes.com',
+  'channelnewsasia.com', 'bangkokpost.com', 'thestar.com.my', 'inquirer.net', 'manilatimes.net',
+  'koreaherald.com', 'koreatimes.co.kr', 'taipeitimes.com', 'abc.net.au', 'smh.com.au',
+  'theage.com.au', 'theaustralian.com.au', 'afr.com', 'stuff.co.nz', 'nzherald.co.nz',
+  'rnz.co.nz', 'hindustantimes.com', 'indianexpress.com', 'livemint.com', 'thehindu.com',
+  'economictimes.indiatimes.com', 'business-standard.com', 'dawn.com', 'thedailystar.net',
+  'theglobeandmail.com', 'nationalpost.com', 'cbc.ca', 'ctvnews.ca', 'montrealgazette.com',
+  'vancouversun.com', 'torontostar.com', 'ottawacitizen.com', 'calgaryherald.com',
+  'aljazeera.com', 'haaretz.com', 'jpost.com', 'timesofisrael.com', 'mg.co.za', 'news24.com'
 ];
 
-// --- FALLBACK DATA FOR TOP TICKERS ---
-const TOP_TICKERS_DATA: Record<string, {name: string, executives: {name: string, role: string}[]}> = {
-  "AAPL": { name: "Apple Inc.", executives: [{name: "Tim Cook", role: "CEO"}, {name: "Luca Maestri", role: "CFO"}] },
-  "MSFT": { name: "Microsoft Corporation", executives: [{name: "Satya Nadella", role: "CEO"}, {name: "Amy Hood", role: "CFO"}] },
-  "GOOG": { name: "Alphabet Inc.", executives: [{name: "Sundar Pichai", role: "CEO"}, {name: "Ruth Porat", role: "CFO"}] },
-  "GOOGL": { name: "Alphabet Inc.", executives: [{name: "Sundar Pichai", role: "CEO"}, {name: "Ruth Porat", role: "CFO"}] },
-  "AMZN": { name: "Amazon.com Inc.", executives: [{name: "Andy Jassy", role: "CEO"}, {name: "Brian Olsavsky", role: "CFO"}] },
-  "NVDA": { name: "NVIDIA Corporation", executives: [{name: "Jensen Huang", role: "CEO"}, {name: "Colette Kress", role: "CFO"}] },
-  "TSLA": { name: "Tesla Inc.", executives: [{name: "Elon Musk", role: "CEO"}, {name: "Vaibhav Taneja", role: "CFO"}] },
-  "META": { name: "Meta Platforms Inc.", executives: [{name: "Mark Zuckerberg", role: "CEO"}, {name: "Susan Li", role: "CFO"}] },
-  "AMD": { name: "Advanced Micro Devices", executives: [{name: "Lisa Su", role: "CEO"}, {name: "Jean Hu", role: "CFO"}] },
-  "NFLX": { name: "Netflix Inc.", executives: [{name: "Ted Sarandos", role: "Co-CEO"}, {name: "Greg Peters", role: "Co-CEO"}] }
+// TIER 2: QUALITY BUSINESS & TECHNOLOGY (Score: 8)
+const QUALITY_BUSINESS_TECH = [
+  'cnbc.com', 'finance.yahoo.com', 'seekingalpha.com', 'benzinga.com', 'thestreet.com',
+  'fool.com', 'zacks.com', 'tipranks.com', 'investopedia.com', 'kiplinger.com',
+  'businessinsider.com', 'fortune.com', 'forbes.com', 'inc.com', 'fastcompany.com',
+  'hbr.org', 'qz.com', 'techcrunch.com', 'wired.com', 'arstechnica.com', 'theverge.com',
+  'zdnet.com', 'cnet.com', 'engadget.com', 'thenextweb.com', 'venturebeat.com',
+  'protocol.com', 'semafor.com', 'theinformation.com', 'techmeme.com',
+  'axios.com', 'thehill.com', 'politico.com', 'rollcall.com',
+  // Additional quality financial sources
+  'investorplace.com', 'marketbeat.com', 'simplywall.st', 'finviz.com',
+  'barchart.com', 'stocktwits.com', 'tradingview.com', 'fintel.io',
+  'gurufocus.com', 'macroaxis.com', 'wallstreetjournal.com', 'moneycontrol.com',
+  'thefly.com', 'streetinsider.com', 'briefing.com', 'earningswhispers.com',
+  'estimize.com', 'sentieo.com', 'alphasense.com', 'koyfin.com'
+];
+
+// TIER 3: BROADCAST NEWS (Score: 7)
+const BROADCAST_NEWS = [
+  'cbsnews.com', 'abcnews.go.com', 'nbcnews.com', 'foxnews.com', 'foxbusiness.com',
+  'msnbc.com', 'cnn.com'
+];
+
+// TIER 2: QUALITY MAGAZINES & JOURNALS (Score: 8)
+const QUALITY_MAGAZINES = [
+  'scientificamerican.com', 'nationalgeographic.com', 'nature.com', 'science.org',
+  'time.com', 'newsweek.com', 'theweek.com', 'slate.com', 'vox.com', 'propublica.org'
+];
+
+// TIER 3: INDUSTRY TRADE PUBLICATIONS (Score: 7)
+const INDUSTRY_TRADE = [
+  // Automotive
+  'autoblog.com', 'motortrend.com', 'caranddriver.com', 'automotive-news.com',
+  'wardsauto.com', 'autonews.com', 'electrek.co', 'insideevs.com', 'greencarreports.com',
+  // Healthcare/Pharma
+  'fiercepharma.com', 'fiercebiotech.com', 'statnews.com', 'medscape.com', 'medpagetoday.com',
+  'healio.com', 'healthcaredive.com', 'modernhealthcare.com', 'beckershospitalreview.com',
+  // Energy
+  'oilprice.com', 'rigzone.com', 'energyvoice.com', 'utilitydive.com', 'greentechmedia.com',
+  'renewableenergyworld.com', 'solarpowerworldonline.com', 'windpowermonthly.com',
+  // Retail/Consumer
+  'retaildive.com', 'retailwire.com', 'chainstoreage.com', 'supermarketnews.com',
+  'grocerydive.com', 'restaurantbusinessonline.com', 'nrn.com', 'qsrmagazine.com',
+  // Real Estate
+  'therealdeal.com', 'commercialobserver.com', 'bisnow.com', 'costar.com', 'globest.com',
+  // Legal
+  'law360.com', 'law.com', 'americanlawyer.com', 'reuters.com/legal', 'bloomberglaw.com',
+  // Advertising/Media
+  'adage.com', 'adweek.com', 'mediapost.com', 'digiday.com', 'campaignlive.com',
+  // Aviation/Defense
+  'aviationweek.com', 'flightglobal.com', 'defensenews.com', 'janes.com', 'aviationtoday.com',
+  // Logistics/Supply Chain
+  'supplychaindive.com', 'freightwaves.com', 'joc.com', 'americanshipper.com', 'dcvelocity.com',
+  // Manufacturing
+  'industryweek.com', 'manufacturingdive.com', 'assemblymag.com', 'plantservices.com',
+  // Telecom
+  'fiercewireless.com', 'lightreading.com', 'rcrwireless.com', 'telecomtv.com',
+  // Construction
+  'constructiondive.com', 'enr.com', 'bdcnetwork.com'
+];
+
+// TIER 3: US LOCAL TV STATIONS (Score: 7)
+const LOCAL_TV_STATIONS = [
+  // Major market local TV
+  'abc7.com', 'abc7chicago.com', 'abc7news.com', 'abc7ny.com', 'abc13.com', 'abc11.com',
+  'cbslocal.com', 'cbsnews.com/local', 'nbclosangeles.com', 'nbcchicago.com', 'nbcnewyork.com',
+  'nbcbayarea.com', 'nbcdfw.com', 'nbcphiladelphia.com', 'nbcwashington.com', 'nbcboston.com',
+  'fox5ny.com', 'fox5dc.com', 'fox32chicago.com', 'fox4news.com', 'fox2detroit.com',
+  'khou.com', 'kprc.com', 'wfaa.com', 'king5.com', 'kiro7.com', 'ksdk.com', 'wcvb.com',
+  'wgn9.com', 'wpxi.com', 'wtae.com', 'wbaltv.com', 'wisn.com', 'wesh.com', 'wftv.com',
+  'wsoctv.com', 'wxii12.com', 'wral.com', 'wtvd.com', 'wfmy.com', 'wis.com', 'wyff4.com',
+  'wpbf.com', 'wplg.com', 'wsvn.com', 'wptv.com', 'news4jax.com', 'clickorlando.com',
+  'fox35orlando.com', 'local10.com', '10news.com', 'cbs8.com', 'fox5sandiego.com',
+  'abc10.com', 'kcra.com', 'fox40.com', 'kron4.com', 'kntv.com', 'kpix.com',
+  '9news.com', 'thedenverchannel.com', 'kdvr.com', 'kob.com', 'krqe.com', 'ksat.com',
+  'news4sanantonio.com', 'kvue.com', 'kxan.com', 'fox7austin.com', 'click2houston.com',
+  'abc13.com', 'fox26houston.com', 'khou.com', 'ktrk.com'
+];
+
+// TIER 2: ADDITIONAL INTERNATIONAL (Score: 8)
+const ADDITIONAL_INTERNATIONAL = [
+  // Latin America
+  'lanacion.com.ar', 'clarin.com', 'infobae.com', 'folha.uol.com.br', 'estadao.com.br',
+  'oglobo.globo.com', 'valor.globo.com', 'eluniversal.com.mx', 'reforma.com', 'jornada.com.mx',
+  'eltiempo.com', 'elespectador.com', 'emol.com', 'latercera.com', 'elcomercio.pe',
+  // Middle East
+  'arabnews.com', 'gulfnews.com', 'thenationalnews.com', 'khaleejtimes.com', 'dailysabah.com',
+  'hurriyetdailynews.com', 'tehrantimes.com', 'jordantimes.com', 'egypttoday.com',
+  // Africa
+  'allafrica.com', 'dailymaverick.co.za', 'businessday.co.za', 'theeastafrican.co.ke',
+  'nation.africa', 'guardian.ng', 'thecable.ng', 'egyptindependent.com',
+  // Eastern Europe
+  'kyivindependent.com', 'kyivpost.com', 'pravda.com.ua', 'novinky.cz', 'gazeta.pl',
+  'wyborcza.pl', 'hvg.hu', 'bne.eu', 'balkaninsight.com',
+  // More Asia
+  'bangkokpost.com', 'nationthailand.com', 'thejakartapost.com', 'vnexpress.net',
+  'vnanet.vn', 'philstar.com', 'gmanetwork.com', 'abs-cbn.com'
+];
+
+// ============================================================================
+// SOCIAL MEDIA & CONSUMER SENTIMENT SOURCES
+// ============================================================================
+
+const SOCIAL_SENTIMENT_SOURCES = {
+  reddit: { domains: ['reddit.com', 'redd.it'], weight: 0.7, category: 'Social Discussion' },
+  linkedin: { domains: ['linkedin.com'], weight: 0.6, category: 'Professional Network' },
+  reviews: {
+    domains: ['trustpilot.com', 'consumeraffairs.com', 'bbb.org', 'sitejabber.com',
+      'yelp.com', 'tripadvisor.com', 'g2.com', 'capterra.com', 'gartner.com',
+      'softwareadvice.com', 'getapp.com', 'producthunt.com'],
+    weight: 0.8, category: 'Consumer Reviews'
+  },
+  employer: {
+    domains: ['glassdoor.com', 'indeed.com', 'comparably.com', 'kununu.com', 'levels.fyi'],
+    weight: 0.7, category: 'Employer Reviews'
+  },
+  appStores: { domains: ['apps.apple.com', 'play.google.com'], weight: 0.75, category: 'App Reviews' }
 };
 
-// --- UTILITIES ---
+// ============================================================================
+// COMPREHENSIVE BLACKLIST
+// ============================================================================
 
-// Normalize but with Bayesian Smoothing
+const BLACKLISTED_DOMAINS = [
+  // Press Release Mills
+  'prnewswire.com', 'businesswire.com', 'globenewswire.com', 'accesswire.com',
+  'newsfilecorp.com', 'prweb.com', 'einpresswire.com', 'newswire.com',
+  // Content Farms & Low-Quality Aggregators
+  'investorsobserver.com', 'stocknews.com', 'insidermonkey.com',
+  'wallstreetzen.com', 'stockmarket.com',
+  'stockanalysis.com', '247wallst.com', 'pennystocks.com',
+  'wallstreetalerts.com', 'stocktitan.com', 'defenseworld.net', 'tickerreport.com',
+  'americanbankingnews.com', 'theenterpriseleader.com', 'themarketsdaily.com',
+  'dailypolitical.com', 'modernreaders.com', 'tickertech.com', 'tickerdata.com',
+  // Clickbait Aggregators
+  'msn.com', 'aol.com', 'yahoo.com/lifestyle', 'yahoo.com/entertainment',
+  'finance.yahoo.com/video',
+  // Tabloids
+  'dailymail.co.uk', 'thesun.co.uk', 'mirror.co.uk', 'express.co.uk', 'thesun.com',
+  'nypost.com/gossip', 'pagesix.com', 'tmz.com', 'eonline.com', 'usmagazine.com',
+  // Fringe/Conspiracy/Propaganda
+  'zerohedge.com', 'breitbart.com', 'infowars.com', 'naturalnews.com', 'thegatewaypundit.com',
+  'rt.com', 'sputniknews.com', 'tass.com', 'cgtn.com', 'globaltimes.cn',
+  'epochtimes.com', 'ntd.com', 'oann.com',
+  // Non-English Unreliable (appearing in English results incorrectly)
+  'ulpravda.ru', 'moivietnam.com', 'baochinhphu.vn', 'vietnamnet.vn',
+  'ria.ru', 'lenta.ru', 'gazeta.ru', 'kommersant.ru', 'iz.ru', 'rbc.ru',
+  'sina.com.cn', 'sohu.com', 'qq.com', '163.com', 'ifeng.com',
+  // Pseudoscience
+  'naturalhealth365.com', 'mercola.com', 'greenmedinfo.com', 'beforeitsnews.com',
+  // Low-Quality Regional Motley Fool
+  'motleyfool.com.au', 'fool.co.uk', 'fool.ca', 'fool.sg',
+  'fool.com/podcasts', 'fool.com/investing/general',
+  // Crypto-focused (unless specifically relevant)
+  'coindesk.com', 'cointelegraph.com', 'decrypt.co', 'bitcoinmagazine.com',
+  // User-Generated (Unvetted)
+  'medium.com', 'substack.com', 'linkedin.com/pulse',
+  'wordpress.com', 'blogger.com', 'tumblr.com'
+];
+
+const BLACKLIST_PATTERNS = [
+  /\/press-release\//i, /\/sponsored\//i, /\/partner-content\//i,
+  /\/brandvoice\//i, /\/contributor\//i, /\/slideshow\//i, /\/paid-post\//i
+];
+
+// ============================================================================
+// SOURCE SCORING SYSTEM
+// ============================================================================
+
+const SOURCE_SCORES: Record<string, number> = {};
+
+[...WIRE_SERVICES, ...PREMIUM_FINANCIAL, ...PREMIUM_NATIONAL, ...PREMIUM_INTERNATIONAL].forEach(d => {
+  SOURCE_SCORES[d] = 10;
+});
+
+MAJOR_US_NEWSPAPERS.forEach(d => { SOURCE_SCORES[d] = 9; });
+
+[...REGIONAL_US_NEWSPAPERS, ...QUALITY_BUSINESS_TECH, ...QUALITY_MAGAZINES, ...ADDITIONAL_INTERNATIONAL].forEach(d => {
+  SOURCE_SCORES[d] = 8;
+});
+
+[...BROADCAST_NEWS, ...INDUSTRY_TRADE, ...LOCAL_TV_STATIONS].forEach(d => { SOURCE_SCORES[d] = 7; });
+
+const SOCIAL_DOMAINS = new Set([
+  ...SOCIAL_SENTIMENT_SOURCES.reddit.domains,
+  ...SOCIAL_SENTIMENT_SOURCES.linkedin.domains,
+  ...SOCIAL_SENTIMENT_SOURCES.reviews.domains,
+  ...SOCIAL_SENTIMENT_SOURCES.employer.domains,
+  ...SOCIAL_SENTIMENT_SOURCES.appStores.domains
+]);
+
+// Legacy arrays for query building
+const FINANCIAL_MAJORS = PREMIUM_FINANCIAL.map(d => `site:${d}`);
+const GLOBAL_MAJORS = [...WIRE_SERVICES, ...PREMIUM_NATIONAL.slice(0, 8), ...PREMIUM_INTERNATIONAL.slice(0, 10)].map(d => `site:${d}`);
+const US_MAJOR_METROS = MAJOR_US_NEWSPAPERS.map(d => `site:${d}`);
+const US_REGIONAL = REGIONAL_US_NEWSPAPERS.map(d => `site:${d}`);
+const INTL_EUROPE = PREMIUM_INTERNATIONAL.filter(d => ['lemonde.fr', 'dw.com', 'spiegel.de', 'corriere.it', 'elpais.com', 'theguardian.com', 'telegraph.co.uk', 'bbc.com'].includes(d)).map(d => `site:${d}`);
+const INTL_ASIA_PACIFIC = PREMIUM_INTERNATIONAL.filter(d => ['nikkei.com', 'scmp.com', 'straitstimes.com', 'smh.com.au', 'abc.net.au', 'japantimes.co.jp', 'koreaherald.com'].includes(d)).map(d => `site:${d}`);
+const INTL_AMERICAS_OTHER = PREMIUM_INTERNATIONAL.filter(d => ['theglobeandmail.com', 'cbc.ca', 'aljazeera.com', 'haaretz.com', 'jpost.com'].includes(d)).map(d => `site:${d}`);
+const TECH_INDUSTRY = QUALITY_BUSINESS_TECH.filter(d => ['techcrunch.com', 'wired.com', 'arstechnica.com', 'theverge.com', 'zdnet.com', 'cnet.com', 'axios.com', 'semafor.com'].includes(d)).map(d => `site:${d}`);
+const GRASSROOTS_SOURCES = ["site:reddit.com", "site:trustpilot.com", "site:glassdoor.com", "site:consumeraffairs.com", "site:bbb.org", "site:sitejabber.com", "site:yelp.com", "site:g2.com", "site:capterra.com"];
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+const isWhitelistedSource = (url: string): { whitelisted: boolean; score: number; category: string } => {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase().replace('www.', '');
+    
+    if (BLACKLISTED_DOMAINS.some(d => hostname.includes(d) || url.toLowerCase().includes(d))) {
+      return { whitelisted: false, score: 0, category: 'Blacklisted' };
+    }
+    
+    if (BLACKLIST_PATTERNS.some(p => p.test(url))) {
+      return { whitelisted: false, score: 0, category: 'Blacklisted Pattern' };
+    }
+    
+    for (const [key, config] of Object.entries(SOCIAL_SENTIMENT_SOURCES)) {
+      if (config.domains.some(d => hostname.includes(d))) {
+        return { whitelisted: true, score: config.weight * 10, category: config.category };
+      }
+    }
+    
+    for (const [domain, score] of Object.entries(SOURCE_SCORES)) {
+      if (hostname.includes(domain) || hostname.endsWith(domain)) {
+        return { whitelisted: true, score, category: 'News' };
+      }
+    }
+    
+    if (hostname.endsWith('.gov')) return { whitelisted: true, score: 9, category: 'Government' };
+    if (hostname.endsWith('.edu')) return { whitelisted: true, score: 8, category: 'Educational' };
+    
+    return { whitelisted: false, score: 0, category: 'Unknown' };
+  } catch (e) {
+    return { whitelisted: false, score: 0, category: 'Invalid URL' };
+  }
+};
+
 const normalize = (score: number, totalWeight: number): number => {
   const alpha = 8;
   const rawNorm = score / Math.sqrt((score * score) + alpha);
-  
-  // Bayesian Smoothing: 
-  const confidence = totalWeight / (totalWeight + 5); 
-  
+  const confidence = totalWeight / (totalWeight + 5);
   const smoothedScore = rawNorm * confidence;
-  
   return Math.max(-1.0, Math.min(1.0, smoothedScore));
 };
 
 const calculateTimeWeight = (pubDate: Date): number => {
   const now = new Date();
   const diffHours = (now.getTime() - pubDate.getTime()) / (1000 * 60 * 60);
-  
-  // ALGORITHM UPDATE: Smoother prioritization
-  
-  // 1. Fresh (Last 24 Hours) -> Weight 1.4x 
   if (diffHours <= 24) return 1.4;
-  
-  // 2. Recent (Last 7 Days) -> Weight 1.15x
   if (diffHours <= 24 * 7) return 1.15;
-  
-  // 3. Older (Up to 28 Days) -> Decay linearly
   return Math.max(0.5, 1.0 - (diffHours / (24 * 40)));
 };
 
@@ -317,70 +694,40 @@ const jaccardIndex = (str1: string, str2: string): number => {
   const tokenize = (s: string) => new Set(s.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2));
   const set1 = tokenize(str1);
   const set2 = tokenize(str2);
-  
   if (set1.size === 0 || set2.size === 0) return 0;
-  
   const intersection = new Set([...set1].filter(x => set2.has(x)));
   const union = new Set([...set1, ...set2]);
-  
   return intersection.size / union.size;
 };
 
 const splitClauses = (text: string): string[] => {
-  return text.split(/(?:\sbut\s|\showever\s|\salthough\s|\swhile\s|\sdespite\s|\sversus\s|[.;:!])/i)
-    .filter(c => c.trim().length > 3);
+  return text.split(/(?:\sbut\s|\showever\s|\salthough\s|\swhile\s|\sdespite\s|\sversus\s|[.;:!])/i).filter(c => c.trim().length > 3);
 };
 
 const analyzeClause = (text: string): { execScore: number, marketScore: number, consumerScore: number } => {
   const tokens = text.toLowerCase().match(/\b[\w']+\b/g) || [];
-  let execScore = 0;
-  let marketScore = 0;
-  let consumerScore = 0;
+  let execScore = 0, marketScore = 0, consumerScore = 0;
   let phraseText = text.toLowerCase();
-  
   let confidenceMultiplier = 1.0;
   let isFutureTense = false;
 
   tokens.forEach(t => {
-      if (HEDGING_WORDS.has(t)) confidenceMultiplier *= 0.7;
-      if (FUTURE_TENSE.has(t)) isFutureTense = true;
+    if (HEDGING_WORDS.has(t)) confidenceMultiplier *= 0.7;
+    if (FUTURE_TENSE.has(t)) isFutureTense = true;
   });
-
   if (isFutureTense) confidenceMultiplier *= 1.2;
 
-  Object.keys(INSIDER_PHRASES).forEach(phrase => {
-    if (phraseText.includes(phrase)) {
-      execScore += (INSIDER_PHRASES[phrase] * 3.0); 
-    }
-  });
-
-  Object.keys(EXEC_PHRASES).forEach(phrase => {
-    if (phraseText.includes(phrase)) {
-      execScore += (EXEC_PHRASES[phrase] * 1.5);
-    }
-  });
-
-  Object.keys(MARKET_PHRASES).forEach(phrase => {
-    if (phraseText.includes(phrase)) {
-      marketScore += MARKET_PHRASES[phrase];
-    }
-  });
-
-  Object.keys(CONSUMER_PHRASES).forEach(phrase => {
-    if (phraseText.includes(phrase)) {
-      consumerScore += CONSUMER_PHRASES[phrase];
-    }
-  });
+  Object.keys(INSIDER_PHRASES).forEach(phrase => { if (phraseText.includes(phrase)) execScore += (INSIDER_PHRASES[phrase] * 3.0); });
+  Object.keys(EXEC_PHRASES).forEach(phrase => { if (phraseText.includes(phrase)) execScore += (EXEC_PHRASES[phrase] * 1.5); });
+  Object.keys(MARKET_PHRASES).forEach(phrase => { if (phraseText.includes(phrase)) marketScore += MARKET_PHRASES[phrase]; });
+  Object.keys(CONSUMER_PHRASES).forEach(phrase => { if (phraseText.includes(phrase)) consumerScore += CONSUMER_PHRASES[phrase]; });
 
   for (let i = 0; i < tokens.length; i++) {
     const word = tokens[i];
-    
     const eVal = EXEC_TONE_LEXICON[word] || 0;
     const mVal = WALL_ST_LEXICON[word] || 0;
     const cVal = CONSUMER_LEXICON[word] || 0;
-
     if (eVal === 0 && mVal === 0 && cVal === 0) continue;
-
     let modifier = 1.0;
     for (let j = 1; j <= 3; j++) {
       if (i - j < 0) break;
@@ -388,44 +735,29 @@ const analyzeClause = (text: string): { execScore: number, marketScore: number, 
       if (BOOSTER_DICT[prevWord]) modifier += BOOSTER_DICT[prevWord];
       if (NEGATIONS.has(prevWord)) modifier *= -0.8;
     }
-
     if (eVal !== 0) execScore += (eVal * modifier);
     if (mVal !== 0) marketScore += (mVal * modifier);
     if (cVal !== 0) consumerScore += (cVal * modifier);
   }
-
   execScore *= confidenceMultiplier;
-
   return { execScore, marketScore, consumerScore };
 };
 
 const extractItemData = (item: Element) => {
   const title = item.querySelector("title")?.textContent || "";
-  
-  // Prioritize content:encoded for richer data if available (Common in RSS)
   const encodedContent = item.getElementsByTagNameNS("*", "encoded")[0]?.textContent;
-  
-  let description = encodedContent || 
-                    item.querySelector("description")?.textContent || 
-                    item.querySelector("summary")?.textContent || 
-                    item.querySelector("content")?.textContent || "";
-                    
-  const pubDateStr = item.querySelector("pubDate")?.textContent || 
-                     item.querySelector("updated")?.textContent || 
-                     item.querySelector("date")?.textContent || "";
+  let description = encodedContent || item.querySelector("description")?.textContent || item.querySelector("summary")?.textContent || item.querySelector("content")?.textContent || "";
+  const pubDateStr = item.querySelector("pubDate")?.textContent || item.querySelector("updated")?.textContent || item.querySelector("date")?.textContent || "";
   let link = item.querySelector("link")?.textContent || "";
   if (!link) {
-      const linkElem = item.querySelector("link");
-      if (linkElem && linkElem.hasAttribute("href")) {
-          link = linkElem.getAttribute("href") || "";
-      }
+    const linkElem = item.querySelector("link");
+    if (linkElem && linkElem.hasAttribute("href")) link = linkElem.getAttribute("href") || "";
   }
   return { title, description, pubDateStr, link };
-}
+};
 
 const fetchRSS = async (url: string, sourceName: string): Promise<Element[]> => {
   const urlWithCache = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-  
   const proxies = [
     `https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCache)}`,
     `https://corsproxy.io/?${encodeURIComponent(urlWithCache)}`,
@@ -433,83 +765,277 @@ const fetchRSS = async (url: string, sourceName: string): Promise<Element[]> => 
   ];
 
   for (let i = 0; i < proxies.length; i++) {
-    const proxyUrl = proxies[i]; 
-    
+    const proxyUrl = proxies[i];
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000); 
-
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       const response = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
-
       if (!response.ok) throw new Error(`Status ${response.status}`);
-      
       let contents = "";
-      
       if (proxyUrl.includes("allorigins")) {
-          const data = await response.json();
-          contents = data.contents;
+        const data = await response.json();
+        contents = data.contents;
       } else {
-          contents = await response.text();
+        contents = await response.text();
       }
-
       if (!contents || contents.length < 50) throw new Error("Empty contents");
-
       const parser = new DOMParser();
       const doc = parser.parseFromString(contents, "text/xml");
       let items = Array.from(doc.querySelectorAll("item"));
       if (items.length === 0) items = Array.from(doc.querySelectorAll("entry"));
-      
       items.forEach(item => item.setAttribute("data-custom-source", sourceName));
       return items;
-
-    } catch (e) {
-      // Continue to next proxy
-    }
+    } catch (e) { /* Continue to next proxy */ }
   }
   return [];
 };
 
+// STATE/REGION TO LOCAL NEWS SOURCES MAPPING
+const STATE_LOCAL_NEWS: Record<string, string[]> = {
+  "massachusetts": ["site:bostonglobe.com", "site:masslive.com", "site:telegram.com", "site:bostonherald.com"],
+  "new york": ["site:nytimes.com", "site:nypost.com", "site:newsday.com", "site:timesunion.com", "site:buffalonews.com", "site:democratandchronicle.com", "site:syracuse.com", "site:nydailynews.com"],
+  "new jersey": ["site:nj.com", "site:northjersey.com", "site:app.com"],
+  "pennsylvania": ["site:inquirer.com", "site:post-gazette.com", "site:pennlive.com", "site:mcall.com", "site:triblive.com", "site:philly.com"],
+  "connecticut": ["site:courant.com", "site:ctpost.com", "site:nhregister.com"],
+  "rhode island": ["site:providencejournal.com"],
+  "vermont": ["site:burlingtonfreepress.com", "site:vtdigger.org"],
+  "new hampshire": ["site:unionleader.com", "site:concordmonitor.com"],
+  "maine": ["site:pressherald.com", "site:bangordailynews.com"],
+  "florida": ["site:miamiherald.com", "site:sun-sentinel.com", "site:tampabay.com", "site:orlandosentinel.com", "site:jacksonville.com"],
+  "georgia": ["site:ajc.com", "site:savannahnow.com"],
+  "north carolina": ["site:charlotteobserver.com", "site:newsobserver.com", "site:greensboro.com", "site:wral.com"],
+  "south carolina": ["site:postandcourier.com", "site:thestate.com", "site:greenvilleonline.com"],
+  "virginia": ["site:washingtonpost.com", "site:pilotonline.com", "site:roanoke.com", "site:dailypress.com"],
+  "maryland": ["site:baltimoresun.com", "site:washingtonpost.com"],
+  "tennessee": ["site:tennessean.com", "site:commercialappeal.com", "site:knoxnews.com"],
+  "kentucky": ["site:courier-journal.com", "site:kentucky.com"],
+  "alabama": ["site:al.com", "site:montgomeryadvertiser.com"],
+  "mississippi": ["site:clarionledger.com"],
+  "louisiana": ["site:nola.com", "site:theadvocate.com"],
+  "arkansas": ["site:arkansasonline.com"],
+  "west virginia": ["site:wvgazettemail.com"],
+  "illinois": ["site:chicagotribune.com", "site:suntimes.com", "site:dailyherald.com", "site:pantagraph.com", "site:pjstar.com", "site:sj-r.com", "site:herald-review.com", "site:jg-tc.com", "site:newstrib.com", "site:qconline.com"],
+  "ohio": ["site:dispatch.com", "site:cleveland.com", "site:cincinnati.com", "site:akronbeaconjournal.com"],
+  "michigan": ["site:freep.com", "site:detroitnews.com", "site:mlive.com"],
+  "indiana": ["site:indystar.com", "site:jconline.com", "site:courierpress.com", "site:nwitimes.com", "site:journalgazette.net", "site:southbendtribune.com", "site:heraldtimesonline.com"],
+  "wisconsin": ["site:jsonline.com", "site:madison.com"],
+  "minnesota": ["site:startribune.com", "site:twincities.com"],
+  "iowa": ["site:desmoinesregister.com", "site:qctimes.com", "site:thegazette.com", "site:siouxcityjournal.com", "site:globegazette.com"],
+  "missouri": ["site:stltoday.com", "site:kansascity.com"],
+  "kansas": ["site:kansas.com", "site:kansascity.com", "site:ljworld.com", "site:hutchnews.com", "site:gctelegram.com"],
+  "nebraska": ["site:omaha.com", "site:journalstar.com", "site:kearneyhub.com", "site:theindependent.com", "site:nptelegraph.com", "site:columbustelegram.com", "site:fremonttribune.com", "site:norfolkdailynews.com"],
+  "south dakota": ["site:argusleader.com"],
+  "north dakota": ["site:inforum.com", "site:bismarcktribune.com"],
+  "texas": ["site:dallasnews.com", "site:houstonchronicle.com", "site:statesman.com", "site:expressnews.com", "site:star-telegram.com"],
+  "arizona": ["site:azcentral.com", "site:tucson.com"],
+  "new mexico": ["site:abqjournal.com"],
+  "oklahoma": ["site:oklahoman.com", "site:tulsaworld.com"],
+  "nevada": ["site:reviewjournal.com", "site:rgj.com"],
+  "california": ["site:latimes.com", "site:sfchronicle.com", "site:mercurynews.com", "site:sandiegouniontribune.com", "site:sacbee.com", "site:ocregister.com", "site:fresnobee.com"],
+  "washington": ["site:seattletimes.com", "site:spokesman.com", "site:thenewstribune.com"],
+  "oregon": ["site:oregonlive.com", "site:registerguard.com", "site:statesmanjournal.com"],
+  "colorado": ["site:denverpost.com", "site:gazette.com", "site:coloradosun.com"],
+  "utah": ["site:sltrib.com", "site:deseret.com"],
+  "idaho": ["site:idahostatesman.com"],
+  "montana": ["site:billingsgazette.com", "site:missoulian.com"],
+  "wyoming": ["site:trib.com"],
+  "alaska": ["site:adn.com"],
+  "hawaii": ["site:staradvertiser.com"],
+  "canada": ["site:theglobeandmail.com", "site:nationalpost.com", "site:cbc.ca", "site:torontostar.com"],
+  "uk": ["site:theguardian.com", "site:telegraph.co.uk", "site:thetimes.co.uk", "site:ft.com", "site:bbc.com"],
+  "germany": ["site:dw.com", "site:handelsblatt.com", "site:spiegel.de"],
+  "france": ["site:lemonde.fr", "site:lefigaro.fr", "site:france24.com"],
+  "japan": ["site:japantimes.co.jp", "site:nikkei.com", "site:mainichi.jp"],
+  "china": ["site:scmp.com"],
+  "india": ["site:economictimes.indiatimes.com", "site:livemint.com", "site:hindustantimes.com"],
+  "australia": ["site:smh.com.au", "site:theaustralian.com.au", "site:afr.com", "site:abc.net.au"],
+};
+
+const CITY_TO_STATE: Record<string, string> = {
+  "new york": "new york", "nyc": "new york", "manhattan": "new york", "brooklyn": "new york",
+  "los angeles": "california", "san francisco": "california", "san jose": "california", "silicon valley": "california",
+  "san diego": "california", "oakland": "california", "palo alto": "california", "santa clara": "california",
+  "chicago": "illinois", "houston": "texas", "dallas": "texas", "austin": "texas", "san antonio": "texas",
+  "phoenix": "arizona", "philadelphia": "pennsylvania", "pittsburgh": "pennsylvania",
+  "seattle": "washington", "redmond": "washington", "bellevue": "washington",
+  "denver": "colorado", "boston": "massachusetts", "cambridge": "massachusetts",
+  "atlanta": "georgia", "miami": "florida", "tampa": "florida", "orlando": "florida",
+  "detroit": "michigan", "minneapolis": "minnesota", "st. louis": "missouri",
+  "charlotte": "north carolina", "raleigh": "north carolina", "durham": "north carolina",
+  "nashville": "tennessee", "memphis": "tennessee", "louisville": "kentucky",
+  "milwaukee": "wisconsin", "indianapolis": "indiana", "columbus": "ohio", "cleveland": "ohio", "cincinnati": "ohio",
+  "kansas city": "missouri", "omaha": "nebraska", "lincoln": "nebraska", "kearney": "nebraska",
+  "las vegas": "nevada", "salt lake city": "utah", "portland": "oregon",
+  "richmond": "virginia", "arlington": "virginia", "baltimore": "maryland", "bethesda": "maryland",
+  "new orleans": "louisiana", "oklahoma city": "oklahoma", "tulsa": "oklahoma",
+  "toronto": "canada", "vancouver": "canada", "montreal": "canada",
+  "london": "uk", "munich": "germany", "paris": "france", "tokyo": "japan",
+  "beijing": "china", "shanghai": "china", "hong kong": "china",
+  "mumbai": "india", "bangalore": "india", "bengaluru": "india",
+  "sydney": "australia", "melbourne": "australia",
+};
+
+const researchCompanyDetails = async (ticker: string, companyName: string): Promise<{
+  location: string | null; state: string | null; localNewsSources: string[]; enhancedName: string | null;
+}> => {
+  const result = { location: null as string | null, state: null as string | null, localNewsSources: [] as string[], enhancedName: null as string | null };
+  const searchQueries = [`${ticker} headquarters location`, `${companyName} based company`, `"${companyName}" headquartered`];
+  const locationPatterns = [/\b([\w\s]+)-based\b/i, /\bheadquartered in ([\w\s,]+)/i, /\bbased in ([\w\s,]+)/i, /\bhome office in ([\w\s,]+)/i];
+  const statePatterns = [/\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)\b/i];
+
+  for (const query of searchQueries) {
+    try {
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!response.ok) continue;
+      const json = await response.json();
+      const contents = json.contents;
+      if (!contents) continue;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(contents, "text/xml");
+      const items = Array.from(doc.querySelectorAll("item")).slice(0, 5);
+      
+      for (const item of items) {
+        const title = item.querySelector("title")?.textContent || "";
+        const description = item.querySelector("description")?.textContent || "";
+        const fullText = `${title} ${description}`;
+        
+        for (const pattern of locationPatterns) {
+          const match = fullText.match(pattern);
+          if (match) {
+            const location = (match[1] || match[2] || "").trim();
+            if (location && location.length > 2 && location.length < 40) {
+              result.location = location;
+              const cityLower = location.toLowerCase();
+              if (CITY_TO_STATE[cityLower]) result.state = CITY_TO_STATE[cityLower];
+              break;
+            }
+          }
+        }
+        
+        if (!result.state) {
+          for (const pattern of statePatterns) {
+            const match = fullText.match(pattern);
+            if (match) { result.state = match[1].toLowerCase(); break; }
+          }
+        }
+        
+        if (companyName === ticker) {
+          const namePatterns = [
+            new RegExp(`([A-Z][A-Za-z0-9\\s&.,'\\-]+?)\\s*\\(${ticker}\\)`, 'i'),
+            new RegExp(`([A-Z][A-Za-z0-9\\s&.,'\\-]+?)\\s*\\((?:NYSE|NASDAQ|AMEX):?\\s*${ticker}\\)`, 'i'),
+          ];
+          for (const np of namePatterns) {
+            const nameMatch = fullText.match(np);
+            if (nameMatch && nameMatch[1]) {
+              const extractedName = nameMatch[1].trim();
+              if (extractedName.length > 2 && extractedName.length < 50) { result.enhancedName = extractedName; break; }
+            }
+          }
+        }
+        if (result.state) break;
+      }
+      if (result.state) break;
+    } catch (e) { /* Continue */ }
+  }
+  
+  if (result.state && STATE_LOCAL_NEWS[result.state]) result.localNewsSources = STATE_LOCAL_NEWS[result.state];
+  return result;
+};
+
 const resolveCompanyIdentity = async (ticker: string): Promise<{ name: string, executives: {name: string, role: string}[] }> => {
-  const defaultExecs = [
-    { name: "CEO", role: "Chief Executive" },
-    { name: "CFO", role: "Chief Financial" }
+  const defaultExecs = [{ name: "CEO", role: "Chief Executive" }, { name: "CFO", role: "Chief Financial" }];
+  const yahooSearchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${ticker}&quotesCount=5&newsCount=0`;
+  const yahooQuoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`;
+  
+  const proxyConfigs = [
+    { proxy: (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, parseJson: true },
+    { proxy: (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`, parseJson: false },
+    { proxy: (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, parseJson: false }
   ];
 
-  // 1. CHECK HARDCODED DATA FIRST
-  if (TOP_TICKERS_DATA[ticker]) {
-    return TOP_TICKERS_DATA[ticker];
-  }
-
-  // 2. FALLBACK TO NETWORK LOOKUP
-  try {
-    const searchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${ticker}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`;
-    
-    const res = await fetch(proxyUrl);
-    if (res.ok) {
-      const json = await res.json();
-      const searchData = JSON.parse(json.contents);
-      
-      if (searchData.quotes && searchData.quotes.length > 0) {
-        const match = searchData.quotes.find((q: any) => q.symbol === ticker) || searchData.quotes[0];
-        const result = { 
-            name: match.shortname || match.longname || ticker, 
-            executives: defaultExecs 
-        };
-        return result;
+  const searchPromises = proxyConfigs.map(async (config) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(config.proxy(yahooSearchUrl), { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        let searchData;
+        if (config.parseJson) { const json = await res.json(); searchData = JSON.parse(json.contents); }
+        else { searchData = await res.json(); }
+        if (searchData.quotes && searchData.quotes.length > 0) {
+          const exactMatch = searchData.quotes.find((q: any) => q.symbol === ticker || q.symbol === `${ticker}.US` || q.symbol?.toUpperCase() === ticker);
+          const match = exactMatch || searchData.quotes[0];
+          if (match && (match.shortname || match.longname)) return match.longname || match.shortname;
+        }
       }
-    }
-  } catch (e) {
-    console.warn("Company resolution failed, fallback enabled.", e);
-  }
+    } catch (e) { /* Continue */ }
+    return null;
+  });
+
+  const quotePromises = proxyConfigs.map(async (config) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(config.proxy(yahooQuoteUrl), { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        let quoteData;
+        if (config.parseJson) { const json = await res.json(); quoteData = JSON.parse(json.contents); }
+        else { quoteData = await res.json(); }
+        if (quoteData.quoteResponse?.result?.length > 0) {
+          const quote = quoteData.quoteResponse.result[0];
+          if (quote.shortName || quote.longName) return quote.longName || quote.shortName;
+        }
+      }
+    } catch (e) { /* Continue */ }
+    return null;
+  });
+
+  try {
+    const allPromises = [...searchPromises, ...quotePromises];
+    const results = await Promise.all(allPromises.map(p => p.catch(() => null)));
+    const validResult = results.find(r => r !== null);
+    if (validResult) return { name: validResult, executives: defaultExecs };
+  } catch (e) { console.warn("All API resolution attempts failed", e); }
 
   return { name: ticker, executives: defaultExecs };
 };
 
-const escapeRegExp = (string: string) => {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+const extractCompanyNameFromNews = (ticker: string, headlines: string[]): string | null => {
+  const patterns = [
+    new RegExp(`([A-Z][A-Za-z0-9\\s&.,'\\-]+?)\\s*\\(${ticker}\\)`, 'i'),
+    new RegExp(`${ticker}[:\\s]+([A-Z][A-Za-z0-9\\s&.,'\\-]+?)(?:\\s+(?:reports|announces|posts|shares|sees|beats|misses|rises|falls|jumps|drops|stock|Inc|Corp|Co|Ltd))`, 'i'),
+    new RegExp(`([A-Z][A-Za-z0-9\\s&.,'\\-]+?)'s\\s+(?:stock|shares|${ticker})`, 'i'),
+    new RegExp(`^([A-Z][A-Za-z0-9\\s&.,'\\-]+?)\\s+(?:reported|announces|unveils|launches|reveals|posts|sees|beats|misses)`, 'i'),
+  ];
+  const tickerInParens = new RegExp(`([A-Z][A-Za-z0-9\\s&.,'\\-]{3,40})\\s*\\((?:NASDAQ|NYSE|AMEX)?:?\\s*${ticker}\\)`, 'i');
+
+  for (const headline of headlines) {
+    const parensMatch = headline.match(tickerInParens);
+    if (parensMatch && parensMatch[1]) {
+      const name = parensMatch[1].trim();
+      if (name.length > 2 && name.length < 50 && /[A-Z]/.test(name) && !name.match(/^\d/)) return name;
+    }
+    for (const pattern of patterns) {
+      const match = headline.match(pattern);
+      if (match && match[1]) {
+        const name = match[1].trim().replace(/^\s*[-–—]\s*/, '').replace(/\s*[-–—]\s*$/, '').replace(/\s+/g, ' ').trim();
+        if (name.length > 2 && name.length < 50 && /[A-Z]/.test(name) && !name.match(/^\d/) && 
+            !name.match(/^(The|A|An|In|On|At|To|For|By|With)\s*$/i) && !name.match(/^(stock|shares|price|market|trading|analyst)/i)) return name;
+      }
+    }
+  }
+  return null;
 };
+
+const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const detectContentCategory = (title: string, description: string, sourceLabel: string, companyIdentity: { name: string, executives: {name: string, role: string}[] }): string => {
   const t = title.toLowerCase();
@@ -517,110 +1043,247 @@ const detectContentCategory = (title: string, description: string, sourceLabel: 
   const s = sourceLabel.toLowerCase();
   const fullText = `${t} . ${d}`;
 
-  if (/\b(transcript|earnings call|conference call|8-k|10-k|shareholder letter)\b/.test(t)) return "Leadership";
+  // Direct leadership content markers in title
+  if (/\b(transcript|earnings call|conference call|8-k|10-k|10-q|shareholder letter|investor day|annual meeting|quarterly results)\b/.test(t)) return "Leadership";
   if (s.includes("executive") || s.includes("sec filing")) return "Leadership";
-
-  const titles = /\b(ceo|cfo|cto|chief executive|chief financial|chairman|president)\b/;
-  const speechActs = /\b(said|says|announced|commented|stated|noted|remarked|discussed|explained|warned|highlighted)\b/;
   
+  // Executive titles - expanded list
+  const titles = /\b(ceo|cfo|cto|coo|cmo|cio|ciso|chief executive|chief financial|chief technology|chief operating|chief marketing|chief information|chairman|vice chairman|president|founder|co-founder|managing director|general manager|evp|svp|executive vice president|senior vice president)\b/;
+  const speechActs = /\b(said|says|announced|commented|stated|noted|remarked|discussed|explained|warned|highlighted|revealed|confirmed|denied|predicted|expects|believes|thinks|told|reports|according to)\b/;
+  
+  // Check title for executive + speech pattern
   if (titles.test(t) && speechActs.test(t)) return "Leadership";
   
-  const quotePattern = /"([^"]+)"\s*(?:,|said|says|according to)\s*(?:the\s*)?(ceo|cfo|chief executive|president|[A-Z][a-z]+)/;
-  if (quotePattern.test(d)) return "Leadership";
-
-  for (const exec of companyIdentity.executives) {
-      if (exec.name !== "CEO" && exec.name !== "CFO") {
-          if (fullText.includes(exec.name.toLowerCase())) return "Leadership";
-      }
+  // Check description for executive + speech pattern (strong signal)
+  if (titles.test(d) && speechActs.test(d)) {
+    // Verify the executive reference is substantive (not just passing mention)
+    const execMatch = d.match(titles);
+    if (execMatch && execMatch.index !== undefined) {
+      const contextAround = d.substring(Math.max(0, execMatch.index - 50), Math.min(d.length, execMatch.index + 100));
+      if (speechActs.test(contextAround)) return "Leadership";
+    }
   }
+  
+  // Quote pattern with executive attribution
+  const quotePattern = /"([^"]+)"\s*(?:,|said|says|according to)\s*(?:the\s*)?(ceo|cfo|cto|chief executive|president|chairman|[A-Z][a-z]+\s+[A-Z][a-z]+)/;
+  if (quotePattern.test(d)) return "Leadership";
+  
+  // Leadership action patterns
+  const leadershipActions = /\b(ceo|cfo|chief executive|president|chairman)\s+(announces?|reveals?|confirms?|steps down|resigns?|retires?|joins?|leaves?|appoints?|hired|fired|ousted)\b/;
+  if (leadershipActions.test(fullText)) return "Leadership";
+  
+  // Check for known executive names
+  for (const exec of companyIdentity.executives) {
+    if (exec.name !== "CEO" && exec.name !== "CFO" && exec.name.length > 3) {
+      const execNameLower = exec.name.toLowerCase();
+      if (fullText.includes(execNameLower)) return "Leadership";
+      // Also check for last name only (e.g., "Nadella" for "Satya Nadella")
+      const nameParts = exec.name.split(' ');
+      if (nameParts.length > 1) {
+        const lastName = nameParts[nameParts.length - 1].toLowerCase();
+        if (lastName.length > 3 && fullText.includes(lastName)) return "Leadership";
+      }
+    }
+  }
+  
+  // Earnings/guidance content often reflects executive views
+  if (/\b(guidance|outlook|forecast|expects|projects|anticipates)\b/.test(t) && /\b(raised|lowered|maintained|cut|boosted|revised)\b/.test(t)) return "Leadership";
+  
+  return sourceLabel;
+};
 
-  return sourceLabel; 
-}
+// ============================================================================
+// SOCIAL MEDIA SENTIMENT FETCHING
+// ============================================================================
 
-// --- MAIN SEARCH LOGIC ---
+const fetchSocialSentiment = async (ticker: string, companyName: string, onProgress?: (msg: string) => void): Promise<SocialSentimentData> => {
+  const sentiment: SocialSentimentData = {
+    reddit: { score: 0, count: 0, mentions: [] },
+    reviews: { score: 0, count: 0, platforms: {} },
+    employer: { score: 0, count: 0, source: '' },
+    overall: 0
+  };
+
+  const shortName = companyName.replace(/,?\s*(Inc\.?|Corp\.?|Corporation|Ltd\.?|Limited|LLC|Plc|Co\.?|Company|Holdings)\b\.?/gi, "").trim();
+
+  if (onProgress) onProgress(`Searching Reddit discussions for ${shortName}...`);
+  
+  try {
+    const redditQueries = [`site:reddit.com "${shortName}" stock`, `site:reddit.com ${ticker} wallstreetbets`, `site:reddit.com "${shortName}" customer experience`];
+    for (const query of redditQueries) {
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+      const items = await fetchRSS(rssUrl, "Reddit");
+      for (const item of items.slice(0, 5)) {
+        const { title, description } = extractItemData(item);
+        const fullText = `${title} ${description}`;
+        const scores = analyzeClause(fullText);
+        sentiment.reddit.score += scores.consumerScore;
+        sentiment.reddit.count++;
+        sentiment.reddit.mentions.push({ title, sentiment: scores.consumerScore > 0.5 ? 'positive' : scores.consumerScore < -0.5 ? 'negative' : 'neutral' });
+      }
+    }
+    if (sentiment.reddit.count > 0) sentiment.reddit.score = sentiment.reddit.score / sentiment.reddit.count;
+  } catch (e) { console.warn("Reddit sentiment fetch failed", e); }
+
+  if (onProgress) onProgress(`Analyzing consumer reviews for ${shortName}...`);
+  
+  try {
+    const reviewQueries = [`site:trustpilot.com "${shortName}"`, `site:consumeraffairs.com "${shortName}"`, `site:bbb.org "${shortName}"`, `site:g2.com "${shortName}"`];
+    for (const query of reviewQueries) {
+      const platform = query.match(/site:(\w+\.com)/)?.[1] || 'unknown';
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+      const items = await fetchRSS(rssUrl, "Reviews");
+      for (const item of items.slice(0, 3)) {
+        const { title, description } = extractItemData(item);
+        const fullText = `${title} ${description}`;
+        const scores = analyzeClause(fullText);
+        sentiment.reviews.score += scores.consumerScore;
+        sentiment.reviews.count++;
+        if (!sentiment.reviews.platforms[platform]) sentiment.reviews.platforms[platform] = { score: 0, count: 0 };
+        sentiment.reviews.platforms[platform].score += scores.consumerScore;
+        sentiment.reviews.platforms[platform].count++;
+      }
+    }
+    if (sentiment.reviews.count > 0) sentiment.reviews.score = sentiment.reviews.score / sentiment.reviews.count;
+  } catch (e) { console.warn("Consumer reviews fetch failed", e); }
+
+  if (onProgress) onProgress(`Checking employer sentiment for ${shortName}...`);
+  
+  try {
+    const employerQuery = `site:glassdoor.com "${shortName}" reviews`;
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(employerQuery)}&hl=en-US&gl=US&ceid=US:en`;
+    const items = await fetchRSS(rssUrl, "Employer Reviews");
+    for (const item of items.slice(0, 5)) {
+      const { title, description } = extractItemData(item);
+      const fullText = `${title} ${description}`;
+      const scores = analyzeClause(fullText);
+      sentiment.employer.score += scores.consumerScore;
+      sentiment.employer.count++;
+    }
+    if (sentiment.employer.count > 0) { sentiment.employer.score = sentiment.employer.score / sentiment.employer.count; sentiment.employer.source = 'Glassdoor'; }
+  } catch (e) { console.warn("Employer sentiment fetch failed", e); }
+
+  const weights = { reddit: 0.3, reviews: 0.5, employer: 0.2 };
+  let totalWeight = 0, weightedSum = 0;
+  if (sentiment.reddit.count > 0) { weightedSum += sentiment.reddit.score * weights.reddit; totalWeight += weights.reddit; }
+  if (sentiment.reviews.count > 0) { weightedSum += sentiment.reviews.score * weights.reviews; totalWeight += weights.reviews; }
+  if (sentiment.employer.count > 0) { weightedSum += sentiment.employer.score * weights.employer; totalWeight += weights.employer; }
+  sentiment.overall = totalWeight > 0 ? weightedSum / totalWeight : 0;
+
+  return sentiment;
+};
+
+// ============================================================================
+// MAIN SEARCH LOGIC
+// ============================================================================
 
 export async function fetchAndAnalyzeTicker(ticker: string, onProgress?: (msg: string) => void): Promise<CompanyAnalysisResult> {
   const t = ticker.toUpperCase().trim();
 
   if (onProgress) onProgress(`Resolving Identity: ${t}...`);
-  
   const identity = await resolveCompanyIdentity(t);
-  const companyName = identity.name; 
+  let companyName = identity.name;
+
+  if (onProgress) onProgress(`Researching ${companyName}...`);
+  const research = await researchCompanyDetails(t, companyName);
+  if (companyName === t && research.enhancedName) companyName = research.enhancedName;
+  
   const shortName = companyName.replace(/,?\s*(Inc\.?|Corp\.?|Corporation|Ltd\.?|Limited|LLC|Plc|Co\.?|Company|Holdings)\b\.?/gi, "").trim();
   
-  // Extract specific Executive Names for query injection
-  const execQueries = identity.executives
-    .filter(e => e.name !== "CEO" && e.name !== "CFO")
-    .map(e => `"${e.name}"`)
-    .join(" OR ");
+  if (research.location && onProgress) onProgress(`Found: ${companyName} (${research.location})...`);
 
-  const isGeneric = GENERIC_COMMON_WORDS.has(t) || 
-                    GENERIC_COMMON_WORDS.has(shortName.toUpperCase()) ||
-                    (shortName.split(' ').length === 1 && shortName.length < 4); 
+  const execQueries = identity.executives.filter(e => e.name !== "CEO" && e.name !== "CFO").map(e => `"${e.name}"`).join(" OR ");
+  const isGeneric = GENERIC_COMMON_WORDS.has(t) || GENERIC_COMMON_WORDS.has(shortName.toUpperCase()) || (shortName.split(' ').length === 1 && shortName.length < 4);
 
-  if (onProgress) onProgress(isGeneric 
-    ? `Strict Mode Active: Filtering generic noise for "${companyName}"...` 
-    : `Broad Search Active for "${companyName}"...`);
+  // Build subsidiary/brand query if available
+  const subsidiaries = SUBSIDIARY_BRANDS[t] || [];
+  const subsidiaryQuery = subsidiaries.length > 0 ? subsidiaries.map(s => `"${s}"`).join(" OR ") : "";
 
-  let entityQuery = "";
-  if (isGeneric) {
-    entityQuery = `("${companyName}" OR (${t} AND (stock OR earnings OR dividend OR revenue)))`;
-  } else {
-    entityQuery = `("${companyName}" OR ${t} OR "${shortName}")`;
+  if (onProgress) {
+    if (isGeneric) {
+      onProgress(`Strict Mode Active: Filtering generic noise for "${companyName}"...`);
+    } else if (subsidiaries.length > 0) {
+      onProgress(`Searching for "${companyName}" and ${subsidiaries.length} related brands/products...`);
+    } else {
+      onProgress(`Searching reputable news sources for "${companyName}"...`);
+    }
   }
-
-  const yahooRssUrl = `https://finance.yahoo.com/rss/headline?s=${t}`;
   
-  // DYNAMIC EXECUTIVE QUERY: Adds specific CEO name to catch more "personality" driven news (e.g. Elon Musk, Jensen Huang)
+  // Enhanced entity query that includes subsidiaries
+  let entityQuery = isGeneric 
+    ? `("${companyName}" OR (${t} AND (stock OR earnings OR dividend OR revenue)))` 
+    : subsidiaryQuery 
+      ? `("${companyName}" OR ${t} OR "${shortName}" OR ${subsidiaryQuery})`
+      : `("${companyName}" OR ${t} OR "${shortName}")`;
+  
+  const yahooRssUrl = `https://finance.yahoo.com/rss/headline?s=${t}`;
   const execQueryBase = execQueries ? `${entityQuery} AND (${execQueries} OR CEO OR CFO OR "Chief Executive")` : `${entityQuery} AND (CEO OR CFO OR "Chief Executive")`;
+
+  const financialSources = FINANCIAL_MAJORS.join(" OR ");
+  const globalSources = GLOBAL_MAJORS.join(" OR ");
+  const usSources = [...US_MAJOR_METROS.slice(0, 30), ...US_REGIONAL.slice(0, 20)].join(" OR ");
+  const intlSources = [...INTL_EUROPE, ...INTL_ASIA_PACIFIC, ...INTL_AMERICAS_OTHER].join(" OR ");
+  const techSources = TECH_INDUSTRY.join(" OR ");
 
   const queries = [
     { label: "Yahoo Finance", urlOverride: yahooRssUrl, q: "" },
-    { label: "Financial Majors", q: `${entityQuery} AND (${FINANCIAL_MAJORS.join(" OR ")}) when:28d` },
-    { label: "Global News", q: `${entityQuery} AND (${GLOBAL_MAJORS.join(" OR ")} OR ${REGIONAL_SOURCES.join(" OR ")}) when:28d` },
-    { label: "Executive Voice", q: `${execQueryBase} AND ("press release" OR "earnings call" OR transcript OR "shareholder letter") when:28d` },
-    { label: "Executive Media", q: `${execQueryBase} AND (interview OR speaks OR discusses OR "fireside chat" OR "Q&A" OR quotes OR said OR announced OR comments) when:28d` },
-    { label: "Wall Street", q: `${entityQuery} AND (analyst OR upgrade OR downgrade OR "price target" OR rating OR buy OR sell) when:28d` },
+    { label: "Financial Majors", q: `${entityQuery} AND (${financialSources}) when:28d` },
+    { label: "Global News", q: `${entityQuery} AND (${globalSources}) when:28d` },
+    { label: "US Regional News", q: `${entityQuery} AND (${usSources}) when:28d` },
+    { label: "International", q: `${entityQuery} AND (${intlSources}) when:28d` },
+    { label: "Tech & Industry", q: `${entityQuery} AND (${techSources}) when:28d` },
+    { label: "Executive Voice", q: `${execQueryBase} AND ("press release" OR "earnings call" OR transcript OR "shareholder letter" OR "investor day" OR "annual meeting") when:28d` },
+    { label: "Executive Media", q: `${execQueryBase} AND (interview OR speaks OR discusses OR "fireside chat" OR "Q&A" OR quotes OR said OR announced OR comments OR podcast) when:28d` },
+    { label: "Wall Street", q: `${entityQuery} AND (analyst OR upgrade OR downgrade OR "price target" OR rating OR "initiates coverage" OR "reiterates" OR "maintains") when:28d` },
     { label: "Consumer", q: `${entityQuery} AND (customer OR review OR product OR service OR complaint OR "social media" OR sentiment OR demand OR sales OR store OR brand OR app OR users OR traffic OR survey OR ${GRASSROOTS_SOURCES.join(" OR ")}) when:28d` },
-    { label: "Industry", q: `${entityQuery} AND (business OR sector OR industry OR growth OR strategy) when:28d` },
+    { label: "Industry Analysis", q: `${entityQuery} AND (business OR sector OR industry OR growth OR strategy OR competition OR "market share") when:28d` },
+    // Add broad search without source restrictions
+    { label: "Broad News", q: `${entityQuery} when:14d` },
+    // Add earnings/financial events search
+    { label: "Financial Events", q: `${entityQuery} AND (earnings OR revenue OR "quarterly results" OR "financial results" OR guidance OR forecast OR outlook) when:28d` },
   ];
 
-  const fetchPromises = queries.map(query => {
-    if (query.urlOverride) return fetchRSS(query.urlOverride, query.label);
-    return fetchRSS(`https://news.google.com/rss/search?q=${encodeURIComponent(query.q)}&hl=en-US&gl=US&ceid=US:en`, query.label);
-  });
-
-  const timeoutPromise = new Promise<never>((_, reject) => 
-    setTimeout(() => reject(new Error("Search timed out (exceeded 30 seconds). The network is congested or data sources are unresponsive.")), 30000)
-  );
-
-  const results = await Promise.race([
-    Promise.all(fetchPromises),
-    timeoutPromise
-  ]);
-  
-  const allRawItems = results.flat();
-
-  if (allRawItems.length === 0) {
-    throw new Error(`No confirmed data streams found for ${t}.`);
+  // Add subsidiary-specific searches for companies with known brands
+  if (subsidiaries.length > 0) {
+    // Pick top 3 most distinctive subsidiaries for additional searches
+    const topSubsidiaries = subsidiaries.slice(0, 3);
+    topSubsidiaries.forEach(sub => {
+      queries.push({ label: `${sub} News`, q: `"${sub}" AND (news OR announcement OR launch OR update OR release) when:14d` });
+    });
   }
 
-  if (onProgress) onProgress(`Analyzing ${allRawItems.length} sources...`);
+  if (research.localNewsSources.length > 0) {
+    const localSources = research.localNewsSources.join(" OR ");
+    const stateLabel = research.state ? research.state.charAt(0).toUpperCase() + research.state.slice(1) : "Local";
+    if (onProgress) onProgress(`Adding ${stateLabel} local news sources...`);
+    queries.push({ label: `${stateLabel} Local`, q: `${entityQuery} AND (${localSources}) when:28d` });
+    if (research.location) queries.push({ label: `${stateLabel} Regional`, q: `${entityQuery} AND ("${research.location}" OR "${research.state}") when:28d` });
+  }
+
+  if (onProgress) onProgress(`Fetching social media sentiment...`);
+  const socialSentimentPromise = fetchSocialSentiment(t, companyName, onProgress);
+
+  const fetchPromises = queries.map(query => query.urlOverride ? fetchRSS(query.urlOverride, query.label) : fetchRSS(`https://news.google.com/rss/search?q=${encodeURIComponent(query.q)}&hl=en-US&gl=US&ceid=US:en`, query.label));
+  const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Search timed out (exceeded 30 seconds).")), 30000));
+  const results = await Promise.race([Promise.all(fetchPromises), timeoutPromise]);
+  const allRawItems = results.flat();
+
+  if (allRawItems.length === 0) throw new Error(`No confirmed data streams found for ${t}.`);
+
+  if (onProgress) onProgress(`Filtering ${allRawItems.length} sources through relevance & credibility check...`);
 
   const newsItems: NewsItem[] = [];
-  
-  let weightedExecSum = 0;
-  let totalExecWeight = 0;
-  let weightedMarketSum = 0;
-  let totalMarketWeight = 0;
-  let weightedConsumerSum = 0;
-  let totalConsumerWeight = 0;
-  
+  let weightedExecSum = 0, totalExecWeight = 0, weightedMarketSum = 0, totalMarketWeight = 0, weightedConsumerSum = 0, totalConsumerWeight = 0;
+  let filteredCount = 0, passedCount = 0;
+
   const tickerRegex = new RegExp(`\\b${t}\\b`, 'i');
   const fullCompanyRegex = new RegExp(escapeRegExp(companyName), 'i');
   const shortNameRegex = new RegExp(`\\b${escapeRegExp(shortName)}\\b`, 'i');
   const financialContextRegex = new RegExp(`\\b(${FINANCIAL_CONTEXT_WORDS.join('|')})\\b`, 'i');
   const consumerContextRegex = /\b(customer|client|user|subscriber|player|gamer|fan|community|review|complaint|feedback|support|service|product|app|platform|device|experience|ui|ux|crash|bug|glitch|quality|refund|price|cost|value|subscription)\b/i;
+  
+  // Build regex for subsidiary/brand matching
+  const subsidiaryRegexes = subsidiaries.map(s => new RegExp(`\\b${escapeRegExp(s)}\\b`, 'i'));
 
   const now = new Date();
   const cutoffDate = new Date();
@@ -630,145 +1293,273 @@ export async function fetchAndAnalyzeTicker(ticker: string, onProgress?: (msg: s
   for (const item of allRawItems) {
     const { title, description, pubDateStr, link } = extractItemData(item);
     const fullText = `${title} . ${description}`;
-    const cleanDesc = description.replace(/<[^>]*>?/gm, ''); 
+    const cleanDesc = description.replace(/<[^>]*>?/gm, '');
 
-    // Date Parsing Safety
     let pubDate = new Date();
-    try {
-      if (pubDateStr && !isNaN(new Date(pubDateStr).getTime())) {
-          pubDate = new Date(pubDateStr);
-      }
-    } catch(e) {
-      console.warn("Date parsing failed", pubDateStr);
-    }
-    
-    if (pubDate.getTime() < cutoffTime) {
-        continue; 
-    }
+    try { if (pubDateStr && !isNaN(new Date(pubDateStr).getTime())) pubDate = new Date(pubDateStr); } catch(e) {}
+    if (pubDate.getTime() < cutoffTime) continue;
 
     const normTitle = title.toLowerCase().trim();
-    
     let isDuplicate = false;
-    for (const existing of newsItems) {
-      if (jaccardIndex(normTitle, existing.headline) > 0.6) { 
-        isDuplicate = true;
-        break;
-      }
-    }
+    for (const existing of newsItems) { if (jaccardIndex(normTitle, existing.headline) > 0.6) { isDuplicate = true; break; } }
     if (isDuplicate) continue;
 
     let keep = false;
     const sourceLabel = item.getAttribute("data-custom-source") || "General";
 
-    if (sourceLabel === "Yahoo Finance") {
-      keep = true; 
-    } else {
-      const isNoise = NOISE_PATTERNS.some(pattern => pattern.test(fullText));
-      if (isNoise) {
-        keep = false;
+    const isNoise = NOISE_PATTERNS.some(pattern => pattern.test(fullText));
+    if (!isNoise) {
+      const hasTicker = tickerRegex.test(fullText);
+      const hasFullName = fullCompanyRegex.test(fullText);
+      const hasShortName = shortNameRegex.test(fullText);
+      
+      // Check for subsidiary/brand mentions
+      const hasSubsidiary = subsidiaryRegexes.length > 0 && subsidiaryRegexes.some(regex => regex.test(fullText));
+      
+      // Check if ticker/company/subsidiary appears in the TITLE (strong relevance signal)
+      const tickerInTitle = tickerRegex.test(title);
+      const fullNameInTitle = fullCompanyRegex.test(title);
+      const shortNameInTitle = shortNameRegex.test(title);
+      const subsidiaryInTitle = subsidiaryRegexes.length > 0 && subsidiaryRegexes.some(regex => regex.test(title));
+      const inTitle = tickerInTitle || fullNameInTitle || shortNameInTitle || subsidiaryInTitle;
+      
+      // Check if this appears to be a peripheral mention (related articles, trending, etc.)
+      const isPeripheralMention = PERIPHERAL_MENTION_PATTERNS.some(pattern => pattern.test(fullText));
+      
+      // Check prominence: does the ticker/company/subsidiary appear in the first 250 chars of description?
+      const descFirst250 = cleanDesc.substring(0, 250);
+      const prominentInDesc = tickerRegex.test(descFirst250) || fullCompanyRegex.test(descFirst250) || shortNameRegex.test(descFirst250) || (subsidiaryRegexes.length > 0 && subsidiaryRegexes.some(regex => regex.test(descFirst250)));
+      
+      // Count how many times the ticker/company/subsidiaries are mentioned
+      const tickerMatches = (fullText.match(tickerRegex) || []).length;
+      const nameMatches = (fullText.match(fullCompanyRegex) || []).length + (fullText.match(shortNameRegex) || []).length;
+      const subsidiaryMatches = subsidiaryRegexes.reduce((count, regex) => {
+        const matches = fullText.match(new RegExp(regex.source, 'gi'));
+        return count + (matches ? matches.length : 0);
+      }, 0);
+      const totalMentions = tickerMatches + nameMatches + subsidiaryMatches;
+      
+      // Any entity match (ticker, company name, or subsidiary)
+      const hasAnyMatch = hasTicker || hasFullName || hasShortName || hasSubsidiary;
+      
+      if (isGeneric) {
+        const hasContext = financialContextRegex.test(fullText);
+        // For generic tickers, require title mention OR (prominent + multiple mentions + context)
+        if (inTitle || (hasFullName && hasContext)) {
+          keep = true;
+        } else if (hasTicker && hasContext && prominentInDesc && totalMentions >= 2 && !isPeripheralMention) {
+          keep = true;
+        }
       } else {
-        const hasTicker = tickerRegex.test(fullText);
-        const hasFullName = fullCompanyRegex.test(fullText);
-        const hasShortName = shortNameRegex.test(fullText);
-
-        if (isGeneric) {
-           const hasContext = financialContextRegex.test(fullText);
-           if (hasFullName) {
-             keep = true;
-           } else if (hasTicker && hasContext) {
-             keep = true;
-           }
-        } else {
-           if (hasTicker || hasFullName || hasShortName) {
-             keep = true;
-           }
+        // For non-generic tickers: more permissive filtering
+        // 1. Always keep if in title
+        // 2. Keep if any match is found and not explicitly a peripheral mention
+        // 3. Keep subsidiary mentions as relevant
+        if (inTitle) {
+          keep = true;
+        } else if (hasAnyMatch) {
+          // Only filter out if it's clearly a peripheral mention AND not prominent
+          if (isPeripheralMention && !prominentInDesc && totalMentions < 2) {
+            keep = false;
+          } else {
+            keep = true;
+          }
         }
       }
     }
 
-    if (!keep) continue;
+    if (!keep) {
+      filteredCount++;
+      continue;
+    }
+
+    // AMBIGUOUS ABBREVIATION CHECK - Filter out stories that match known false positives
+    if (AMBIGUOUS_ABBREVIATIONS[t]) {
+      const lowerText = fullText.toLowerCase();
+      const falsePositives = AMBIGUOUS_ABBREVIATIONS[t];
+      const isFalsePositive = falsePositives.some(fp => lowerText.includes(fp));
+      if (isFalsePositive && !fullCompanyRegex.test(fullText)) {
+        // Skip if matches a known false positive pattern AND doesn't mention company name
+        filteredCount++;
+        continue;
+      }
+    }
+
+    // SOURCE VALIDATION - Use whitelist for scoring, but don't strictly enforce
+    let sourceScore = 5; // Default moderate score for unknown sources
+    let sourceCategory = 'Unknown';
+    
+    if (link) {
+      const sourceCheck = isWhitelistedSource(link);
+      if (sourceCheck.whitelisted) {
+        sourceScore = sourceCheck.score;
+        sourceCategory = sourceCheck.category;
+        passedCount++;
+      } else if (sourceCheck.category === 'Blacklisted' || sourceCheck.category === 'Blacklisted Pattern') {
+        // Only skip blacklisted sources (content farms, tabloids, etc.)
+        filteredCount++;
+        continue;
+      } else {
+        // Unknown sources get through with moderate score
+        sourceScore = 5;
+        sourceCategory = 'Unverified';
+        passedCount++;
+      }
+    }
 
     let timeWeight = calculateTimeWeight(pubDate);
     const impactMult = getImpactMultiplier(fullText);
-    
-    // --- TRUSTED SOURCE CHECK ---
-    let sourceScore = 1;
-    if (link) {
+    let isLocalSource = false;
+
+    if (link && research.localNewsSources.length > 0) {
       try {
         const hostname = new URL(link).hostname.toLowerCase();
-        if (TRUSTED_DOMAINS.some(d => hostname.includes(d))) {
-          sourceScore = 10;
-        } else if (FINANCIAL_MAJORS.some(d => hostname.includes(d.replace('site:', '')))) {
-          sourceScore = 5;
-        }
-      } catch (e) { /* ignore invalid url */ }
+        const isMatchingLocal = research.localNewsSources.some(s => hostname.includes(s.replace('site:', '')));
+        if (isMatchingLocal) isLocalSource = true;
+      } catch (e) {}
     }
 
-    let itemExecScore = 0;
-    let itemMarketScore = 0;
-    let itemConsumerScore = 0;
-
+    let itemExecScore = 0, itemMarketScore = 0, itemConsumerScore = 0;
     const combinedText = `${title}. ${cleanDesc}`;
     const clauses = splitClauses(combinedText);
     
     clauses.forEach((clause, index) => {
-        const scores = analyzeClause(clause);
-        let clauseWeight = 1.0;
-        if (clauses.length > 1 && index >= clauses.length / 2) {
-            clauseWeight = 1.3;
-        }
-        itemExecScore += (scores.execScore * clauseWeight);
-        itemMarketScore += (scores.marketScore * clauseWeight);
-        itemConsumerScore += (scores.consumerScore * clauseWeight);
+      const scores = analyzeClause(clause);
+      let clauseWeight = (clauses.length > 1 && index >= clauses.length / 2) ? 1.3 : 1.0;
+      itemExecScore += (scores.execScore * clauseWeight);
+      itemMarketScore += (scores.marketScore * clauseWeight);
+      itemConsumerScore += (scores.consumerScore * clauseWeight);
     });
 
-    // We normalize item score slightly less aggressively here to preserve range
-    const finalExec = normalize(itemExecScore, 10); 
+    const finalExec = normalize(itemExecScore, 10);
     const finalMarket = normalize(itemMarketScore, 10);
     const finalConsumer = normalize(itemConsumerScore, 10);
     
     let category = detectContentCategory(title, cleanDesc, sourceLabel, identity);
     let reliabilityWeight = 1.0;
     
-    // INTEGRATE TRUST SCORE INTO WEIGHT
-    // Higher trust sources now count significantly more towards the final weighted average
-    if (sourceScore >= 10) {
-      reliabilityWeight = 1.5; 
-    } else if (sourceScore >= 5) {
-      reliabilityWeight = 1.25;
-    }
+    if (sourceScore >= 9) reliabilityWeight = 1.6;
+    else if (sourceScore >= 8) reliabilityWeight = 1.4;
+    else if (sourceScore >= 7) reliabilityWeight = 1.2;
+    if (isLocalSource) reliabilityWeight *= 1.2;
 
-    if (GRASSROOTS_SOURCES.some(s => s.includes(new URL(link).hostname.replace('www.','')))) {
-      reliabilityWeight = 1.3; 
-      category = "Consumer";
+    if (link) {
+      try {
+        const hostname = new URL(link).hostname.replace('www.','').toLowerCase();
+        if (SOCIAL_DOMAINS.has(hostname) || GRASSROOTS_SOURCES.some(s => hostname.includes(s.replace('site:', '')))) {
+          reliabilityWeight = 1.3; category = "Consumer";
+        }
+      } catch (e) {}
     }
 
     const isExec = category === "Leadership";
-
-    if (isExec) {
-      timeWeight *= 2.0; // Slightly reduced from 2.5 to avoid over-indexing on one PR
-    } else if (consumerContextRegex.test(fullText)) {
-      category = "Consumer";
-    }
+    if (isExec) timeWeight *= 2.0;
 
     const finalWeight = timeWeight * impactMult * reliabilityWeight;
-
+    
+    // Calculate a guaranteed sentiment score using basic word analysis as fallback
+    const calculateBasicSentiment = (text: string): number => {
+      const lowerText = text.toLowerCase();
+      const basicPositive = ['good', 'great', 'strong', 'success', 'positive', 'growth', 'profit', 'gain', 'increase', 'rise', 'up', 'beat', 'exceed', 'above', 'better', 'improve', 'win', 'record', 'high', 'best', 'lead', 'ahead', 'boost', 'surge', 'soar', 'jump', 'rally', 'recover', 'outperform', 'buy', 'upgrade', 'bullish', 'optimistic', 'confident', 'pleased', 'excited', 'milestone', 'innovation', 'breakthrough', 'launch', 'expand', 'partner', 'award', 'approve', 'love', 'amazing', 'excellent', 'recommend'];
+      const basicNegative = ['bad', 'weak', 'fail', 'loss', 'negative', 'decline', 'drop', 'fall', 'down', 'miss', 'below', 'worse', 'cut', 'low', 'concern', 'risk', 'problem', 'issue', 'challenge', 'struggle', 'lag', 'behind', 'slow', 'slump', 'plunge', 'crash', 'sell', 'downgrade', 'bearish', 'worried', 'disappoint', 'delay', 'cancel', 'lawsuit', 'investigate', 'recall', 'warning', 'threat', 'layoff', 'restructure', 'uncertain', 'volatile', 'pressure', 'hate', 'terrible', 'awful', 'avoid'];
+      
+      let posCount = 0, negCount = 0;
+      basicPositive.forEach(w => { 
+        const regex = new RegExp(`\\b${w}\\b`, 'gi');
+        const matches = lowerText.match(regex);
+        if (matches) posCount += matches.length;
+      });
+      basicNegative.forEach(w => { 
+        const regex = new RegExp(`\\b${w}\\b`, 'gi');
+        const matches = lowerText.match(regex);
+        if (matches) negCount += matches.length;
+      });
+      
+      if (posCount === 0 && negCount === 0) return 0;
+      return (posCount - negCount) / (posCount + negCount); // Returns -1 to 1
+    };
+    
+    // Get the best available sentiment score for this article
+    const getBestScore = (exec: number, market: number, consumer: number, text: string): number => {
+      const scores = [
+        { val: exec, weight: 1.0 },
+        { val: market, weight: 1.0 },
+        { val: consumer, weight: 1.0 }
+      ].filter(s => Math.abs(s.val) > 0.01);
+      
+      if (scores.length > 0) {
+        // Return weighted average of non-zero scores
+        const sum = scores.reduce((acc, s) => acc + s.val * s.weight, 0);
+        const weightSum = scores.reduce((acc, s) => acc + s.weight, 0);
+        return sum / weightSum;
+      }
+      
+      // Fallback to basic sentiment
+      const basic = calculateBasicSentiment(text);
+      return basic * 0.3; // Scale down basic sentiment
+    };
+    
     let displayScore = 0;
-
-    if (category === "Leadership") {
-       weightedExecSum += finalExec * finalWeight;
-       totalExecWeight += finalWeight;
-       displayScore = finalExec;
-    } else if (["Wall Street", "Financials", "Yahoo Finance", "Major Wires", "Market News", "Financial Majors"].includes(category)) {
-       weightedMarketSum += finalMarket * finalWeight;
-       totalMarketWeight += finalWeight;
-       displayScore = finalMarket;
-    } else {
-       if (category === "Consumer" || Math.abs(finalConsumer) > 0.05) {
-          weightedConsumerSum += finalConsumer * finalWeight;
-          totalConsumerWeight += finalWeight;
-       }
-       displayScore = finalConsumer;
+    
+    // Map source labels to primary categories
+    const execLabels = ["Executive Voice", "Executive Media", "Leadership"];
+    const wallStreetLabels = ["Wall Street", "Financials", "Yahoo Finance", "Major Wires", "Market News", "Financial Majors", "Financial Events"];
+    const consumerLabels = ["Consumer"];
+    
+    // Determine which buckets this article contributes to
+    let contributesToExec = isExec || execLabels.includes(sourceLabel);
+    let contributesToWallStreet = wallStreetLabels.includes(category) || wallStreetLabels.includes(sourceLabel);
+    let contributesToConsumer = consumerLabels.includes(category) || consumerLabels.includes(sourceLabel) || consumerContextRegex.test(fullText);
+    
+    // If no specific category, determine by content analysis
+    if (!contributesToExec && !contributesToWallStreet && !contributesToConsumer) {
+      // Check content for category hints
+      const lowerText = fullText.toLowerCase();
+      if (/\b(ceo|cfo|chief|executive|president|chairman|founder|management|leadership)\b/.test(lowerText)) {
+        contributesToExec = true;
+      }
+      if (/\b(analyst|upgrade|downgrade|price target|rating|earnings|revenue|stock|shares|market|investor|quarter|guidance|forecast)\b/.test(lowerText)) {
+        contributesToWallStreet = true;
+      }
+      if (/\b(customer|user|review|product|service|app|experience|quality|support|complaint|feedback)\b/.test(lowerText)) {
+        contributesToConsumer = true;
+      }
+      
+      // If still no category, contribute to all three with lower weight
+      if (!contributesToExec && !contributesToWallStreet && !contributesToConsumer) {
+        contributesToExec = true;
+        contributesToWallStreet = true;
+        contributesToConsumer = true;
+      }
+    }
+    
+    // Calculate scores for each bucket this article contributes to
+    const bestScore = getBestScore(finalExec, finalMarket, finalConsumer, combinedText);
+    
+    if (contributesToExec) {
+      let execScore = Math.abs(finalExec) > 0.01 ? finalExec : bestScore;
+      weightedExecSum += execScore * finalWeight;
+      totalExecWeight += finalWeight;
+      if (isExec) displayScore = execScore; // Only set displayScore if this is the primary category
+    }
+    
+    if (contributesToWallStreet) {
+      let marketScore = Math.abs(finalMarket) > 0.01 ? finalMarket : bestScore;
+      weightedMarketSum += marketScore * finalWeight;
+      totalMarketWeight += finalWeight;
+      if (!isExec && wallStreetLabels.includes(sourceLabel)) displayScore = marketScore;
+    }
+    
+    if (contributesToConsumer) {
+      let consumerScore = Math.abs(finalConsumer) > 0.01 ? finalConsumer : bestScore;
+      weightedConsumerSum += consumerScore * finalWeight;
+      totalConsumerWeight += finalWeight;
+      if (!isExec && !wallStreetLabels.includes(sourceLabel)) displayScore = consumerScore;
+    }
+    
+    // Ensure displayScore has a value
+    if (Math.abs(displayScore) < 0.001) {
+      displayScore = bestScore;
     }
 
     newsItems.push({
@@ -777,100 +1568,138 @@ export async function fetchAndAnalyzeTicker(ticker: string, onProgress?: (msg: s
       timestamp: pubDate.getTime(),
       summary: cleanDesc.substring(0, 160) + (cleanDesc.length > 160 ? "..." : ""),
       source: item.querySelector("source")?.textContent || sourceLabel,
-      relatedExecutive: isExec ? "C-Suite" : "General", 
+      relatedExecutive: isExec ? "C-Suite" : "General",
       sentimentScore: displayScore,
       sentimentLabel: displayScore > 0.05 ? 'Positive' : displayScore < -0.05 ? 'Negative' : 'Neutral',
       keyQuotes: [],
       link,
       relevanceScore: finalWeight,
-      sourceScore: sourceScore
+      sourceScore: sourceScore,
+      sourceCategory: sourceCategory,
+      isVerifiedSource: sourceScore >= 7
     });
   }
+
+  if (onProgress) onProgress(`Relevance filter: ${passedCount} relevant articles, ${filteredCount} peripheral/low-quality rejected`);
 
   const filterOutliers = (items: NewsItem[], targetScore: number) => {
     if (items.length < 5) return;
     const variances = items.map(i => Math.pow(i.sentimentScore - targetScore, 2));
     const stdDev = Math.sqrt(variances.reduce((a, b) => a + b, 0) / items.length);
-    
-    items.forEach(i => {
-      if (Math.abs(i.sentimentScore - targetScore) > (stdDev * 1.5)) {
-        i.sentimentScore = i.sentimentScore * 0.7; 
-      }
-    });
+    items.forEach(i => { if (Math.abs(i.sentimentScore - targetScore) > (stdDev * 1.5)) i.sentimentScore = i.sentimentScore * 0.7; });
   };
-  
-  // Sorting: Date Descending (bucketed by day), then Source Score Descending
+
   newsItems.sort((a, b) => {
-    // Bucket by day to allow secondary sorting
     const dateA = new Date(a.timestamp).setHours(0,0,0,0);
     const dateB = new Date(b.timestamp).setHours(0,0,0,0);
-    
-    if (dateA !== dateB) {
-      return dateB - dateA;
-    }
-    // Same day: Trustworthiness
+    if (dateA !== dateB) return dateB - dateA;
     return (b.sourceScore || 0) - (a.sourceScore || 0);
   });
-  
-  // Use the new normalize with totalWeight (Bayesian Smoothing)
-  const finalWallSt = normalize(totalMarketWeight > 0 ? (weightedMarketSum / totalMarketWeight) * 5 : 0, totalMarketWeight);
-  const finalConsumer = normalize(totalConsumerWeight > 0 ? (weightedConsumerSum / totalConsumerWeight) * 5 : 0, totalConsumerWeight);
-  const finalOverall = normalize(totalExecWeight > 0 ? (weightedExecSum / totalExecWeight) * 5 : 0, totalExecWeight);
-  
-  filterOutliers(newsItems, finalWallSt); 
 
-  // CORRECTED REALITY SCORE: WEIGHTED AVERAGE
+  // Calculate final scores with softer normalization to preserve signal
+  const softNormalize = (weightedSum: number, totalWeight: number): number => {
+    if (totalWeight <= 0) return 0;
+    const rawAvg = weightedSum / totalWeight;
+    // Softer sigmoid-like normalization
+    const scaled = rawAvg * 3; // Amplify the signal
+    const normalized = scaled / Math.sqrt(scaled * scaled + 1); // Soft clamp to -1 to 1
+    // Apply confidence based on weight, but less aggressively
+    const confidence = Math.min(totalWeight / (totalWeight + 2), 0.95);
+    return Math.max(-1.0, Math.min(1.0, normalized * confidence));
+  };
+  
+  let finalWallSt = softNormalize(weightedMarketSum, totalMarketWeight);
+  let finalConsumerScore = softNormalize(weightedConsumerSum, totalConsumerWeight);
+  let finalOverall = softNormalize(weightedExecSum, totalExecWeight);
+  
+  // Ensure minimum visible scores when we have data
+  if (totalMarketWeight > 0 && Math.abs(finalWallSt) < 0.02) {
+    const sign = weightedMarketSum >= 0 ? 1 : -1;
+    finalWallSt = sign * 0.02;
+  }
+  if (totalConsumerWeight > 0 && Math.abs(finalConsumerScore) < 0.02) {
+    const sign = weightedConsumerSum >= 0 ? 1 : -1;
+    finalConsumerScore = sign * 0.02;
+  }
+  if (totalExecWeight > 0 && Math.abs(finalOverall) < 0.02) {
+    const sign = weightedExecSum >= 0 ? 1 : -1;
+    finalOverall = sign * 0.02;
+  }
+  
+  // Integrate social sentiment into consumer score
+  const socialSentiment = await socialSentimentPromise;
+  if (socialSentiment && socialSentiment.overall !== 0) {
+    // Blend social sentiment with news-based consumer sentiment
+    // Social sentiment weight: 40%, News-based consumer sentiment: 60%
+    const socialWeight = 0.4;
+    const newsWeight = 0.6;
+    if (totalConsumerWeight > 0) {
+      finalConsumerScore = (finalConsumerScore * newsWeight) + (socialSentiment.overall * socialWeight);
+    } else {
+      // If no news-based consumer data, use social sentiment directly
+      finalConsumerScore = socialSentiment.overall;
+    }
+  }
+  
+  filterOutliers(newsItems, finalWallSt);
+
   const totalRealityWeight = totalExecWeight + totalConsumerWeight;
-  let realityScore = finalOverall; // Default to Exec only
-  
-  if (totalRealityWeight > 0) {
-      // Weighted average of Exec and Consumer for "Internal Reality"
-      realityScore = ((finalOverall * totalExecWeight) + (finalConsumer * totalConsumerWeight)) / totalRealityWeight;
+  let realityScore = finalOverall;
+  if (totalRealityWeight > 0) realityScore = ((finalOverall * totalExecWeight) + (finalConsumerScore * totalConsumerWeight)) / totalRealityWeight;
+
+  // Calculate gap - use lower threshold to ensure it's calculated when we have data
+  let gap = 0;
+  if (totalMarketWeight > 0.5 && totalRealityWeight > 0.5) {
+    gap = realityScore - finalWallSt;
   }
 
-  let gap = 0;
-  // Gap is only valid if we have enough market data (e.g. at least weight of ~5, roughly 2-3 reliable articles)
-  // Otherwise, the gap is likely noise.
-  if (totalMarketWeight > 3.0) {
-      gap = realityScore - finalWallSt;
-  }
-  
   let signal: TradingSignal = { type: 'NEUTRAL', headline: "Mixed Signals", description: "No clear consensus found across the three vectors.", strength: 50 };
   
   if (Math.abs(gap) > 0.4) {
-     signal = gap > 0 
+    signal = gap > 0 
       ? { type: 'BULLISH_DIVERGENCE', headline: "Reality Exceeds Pricing", description: "Alpha Spread Detected: Management Confidence & Product Sentiment significantly outperform Wall Street's outlook.", strength: 85 }
       : { type: 'BEARISH_DIVERGENCE', headline: "Reality Lags Pricing", description: "Alpha Spread Detected: Wall Street is overly optimistic compared to Executive tone and Customer feedback.", strength: 85 };
   } else if (Math.abs(finalOverall) > 0.3 && Math.abs(finalWallSt) > 0.3 && Math.sign(finalOverall) === Math.sign(finalWallSt)) {
-     signal = finalOverall > 0
+    signal = finalOverall > 0
       ? { type: 'BULLISH_CONSENSUS', headline: "Full Bullish Alignment", description: "Wall St and C-Suite strongly agree on positive trajectory.", strength: 95 }
       : { type: 'BEARISH_CONSENSUS', headline: "Full Bearish Alignment", description: "Universal negative outlook detected from both analysts and management.", strength: 95 };
-  } else if (Math.abs(finalConsumer) > 0.5 && Math.sign(finalConsumer) !== Math.sign(finalWallSt)) {
-      signal = finalConsumer > 0
+  } else if (Math.abs(finalConsumerScore) > 0.5 && Math.sign(finalConsumerScore) !== Math.sign(finalWallSt)) {
+    signal = finalConsumerScore > 0
       ? { type: 'VOLATILITY_WARNING', headline: "Consumer/Market Split", description: "Customers love the product, but Wall Street hates the stock (Value Trap potential).", strength: 75 }
       : { type: 'VOLATILITY_WARNING', headline: "Brand Erosion Warning", description: "Wall Street is bullish, but consumer sentiment is collapsing.", strength: 80 };
   }
 
-  const groundingLinks: GroundingChunk[] = newsItems.map(i => ({
-      web: { uri: i.link || "", title: i.headline }
-  })).filter(g => g.web?.uri);
-
+  const groundingLinks: GroundingChunk[] = newsItems.map(i => ({ web: { uri: i.link || "", title: i.headline } })).filter(g => g.web?.uri);
   const processedExecs: Executive[] = identity.executives.map(e => ({ name: e.name, role: e.role, sentimentScore: 0, summary: "" }));
 
-  const result = {
+  let finalCompanyName = companyName;
+  if (companyName === t && newsItems.length > 0) {
+    const headlines = newsItems.map(item => item.headline);
+    const extractedName = extractCompanyNameFromNews(t, headlines);
+    if (extractedName) finalCompanyName = extractedName;
+  }
+
+  const result: CompanyAnalysisResult = {
     ticker: t,
-    companyName,
+    companyName: finalCompanyName,
     overallSentiment: finalOverall,
-    overallSummary: "C-Suite Confidence Index", 
+    overallSummary: "C-Suite Confidence Index",
     wallStreetSentiment: finalWallSt,
     wallStreetSummary: "External Market Sentiment",
-    consumerSentiment: finalConsumer,
+    consumerSentiment: finalConsumerScore,
     consumerSummary: "Broad Industry Context",
     sentimentGap: gap,
     executives: processedExecs,
     items: newsItems,
     groundingLinks,
-    signal
+    signal,
+    socialSentiment,
+    sourceStats: {
+      totalProcessed: allRawItems.length,
+      passed: passedCount,
+      filtered: filteredCount,
+      verifiedSources: newsItems.length
+    }
   };
 
   return result;

@@ -1,0 +1,368 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Gentium Book font */
+@font-face {
+  font-family: GentiumBookW;
+  font-weight: 400;
+  src: url(/GentiumBook-Regular.woff2);
+}
+@font-face {
+  font-family: GentiumBookW;
+  font-weight: 700;
+  src: url(/GentiumBook-Bold.woff2);
+}
+@font-face {
+  font-family: GentiumBookW;
+  font-weight: 400;
+  font-style: italic;
+  src: url(/GentiumBook-Italic.woff2);
+}
+@font-face {
+  font-family: GentiumBookW;
+  font-weight: 700;
+  font-style: italic;
+  src: url(/GentiumBook-BoldItalic.woff2);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  font-family: GentiumBookW, Georgia, serif;
+  background-color: #f5f5f5;
+  color: #0f172a;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.font-serif, h1, h2, h3 {
+  font-family: GentiumBookW, Georgia, serif;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.95));
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.header-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: flex;
+  height: 5rem;
+  align-items: center;
+  padding: 0 1.5rem;
+}
+.logo {
+  display: flex;
+  gap: 0.875rem;
+  align-items: center;
+  text-decoration: none;
+}
+.logo-icon {
+  height: 1.5rem;
+  width: 1.5rem;
+  color: white;
+}
+.logo-text {
+  color: white;
+  font-family: GentiumBookW, Georgia, serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+/* Main */
+.main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+  flex-grow: 1;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: #0f172a;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+}
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  background: #34d399;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.title {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.tagline {
+  font-size: 1.125rem;
+  color: #64748b;
+  max-width: 32rem;
+  margin: 0 auto;
+  font-weight: 400;
+}
+
+/* Search */
+.search-container {
+  max-width: 32rem;
+  margin: 0 auto 3rem;
+}
+.search-wrapper {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 
+    0 0 0 1px rgba(0,0,0,0.04),
+    0 4px 6px -1px rgba(0,0,0,0.05),
+    0 20px 40px -8px rgba(99, 102, 241, 0.15);
+  transition: all 0.3s ease;
+}
+.search-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+.search-input {
+  width: 100%;
+  height: 3.5rem;
+  padding: 0 5rem 0 3.25rem;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  font-family: GentiumBookW, Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #0f172a;
+  text-transform: uppercase;
+}
+.search-input::placeholder {
+  color: #cbd5e1;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.search-input:focus {
+  outline: none;
+}
+.search-btn {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 3rem;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}
+.search-btn:hover {
+  background: linear-gradient(135deg, #4338ca, #4f46e5);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.5);
+  transform: scale(1.02);
+}
+.search-btn:active {
+  transform: scale(0.98);
+}
+.search-btn svg {
+  color: white;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Trending */
+.trending {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.trending-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+.ticker-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.ticker-btn:hover {
+  background: white;
+  color: #4f46e5;
+  border-color: rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+.ticker-btn:active {
+  transform: scale(0.96);
+}
+
+/* Footer */
+.footer {
+  background: #f5f5f5;
+  color: #64748b;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+.footer-inner {
+  max-width: 64rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.footer-copy {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+.footer-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+.footer-link {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.06);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.footer-link:hover {
+  background: white;
+  color: #4f46e5;
+  border-color: rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+/* React root */
+#root {
+  min-height: 0;
+}
+
+/* Ad Banner - matches Monetization.tsx horizontal variant */
+.ad-container {
+  width: 100%;
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+/* UWCU Advertisement */
+.uwcu-ad {
+  border: 3px solid #000;
+  box-sizing: border-box;
+  background: #fff;
+}
+.uwcu-ad-inner {
+  border: 2px solid #000;
+  margin: 2px;
+}
+.uwcu-ad-content {
+  border: 1px solid #000;
+  margin: 2px;
+  padding: 16px 24px;
+  text-align: center;
+}
+.uwcu-quote {
+  font-family: GentiumBookW, Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+.uwcu-attribution {
+  font-family: GentiumBookW, Georgia, serif;
+  font-size: 12px;
+  text-align: right;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+.uwcu-divider {
+  width: 60px;
+  height: 1px;
+  background: #cbd5e1;
+  margin: 0 auto 12px;
+}
+.uwcu-tagline {
+  font-family: GentiumBookW, Georgia, serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-bottom: 14px;
+}
+.uwcu-logo-link {
+  display: inline-block;
+}
+.uwcu-logo {
+  width: 110px;
+  height: auto;
+}
