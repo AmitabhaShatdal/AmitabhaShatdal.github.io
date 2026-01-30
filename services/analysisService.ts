@@ -756,52 +756,54 @@ const extractItemData = (item: Element) => {
   return { title, description, pubDateStr, link };
 };
 
+// Helper to add delays between requests
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Single proxy fetch attempt
+const tryProxy = async (proxyUrl: string, isAllOrigins: boolean): Promise<string | null> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!response.ok) return null;
+    if (isAllOrigins) {
+      const data = await response.json();
+      return data.contents || null;
+    }
+    return await response.text();
+  } catch (e) {
+    return null;
+  }
+};
+
 const fetchRSS = async (url: string, sourceName: string): Promise<Element[]> => {
   const urlWithCache = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
   
-  // Multiple CORS proxies for redundancy - if one fails or blocks GitHub Pages, others will work
+  // Use only the most reliable proxies, try them in order with delays
   const proxies = [
-    { url: `https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCache)}`, type: 'allorigins' },
-    { url: `https://corsproxy.io/?${encodeURIComponent(urlWithCache)}`, type: 'text' },
-    { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCache)}`, type: 'text' },
-    { url: `https://thingproxy.freeboard.io/fetch/${urlWithCache}`, type: 'text' },
-    { url: `https://cors-anywhere.herokuapp.com/${urlWithCache}`, type: 'text' },
-    { url: `https://proxy.cors.sh/${urlWithCache}`, type: 'text' },
-    { url: `https://crossorigin.me/${urlWithCache}`, type: 'text' }
+    { url: `https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCache)}`, isAllOrigins: true },
+    { url: `https://corsproxy.io/?${encodeURIComponent(urlWithCache)}`, isAllOrigins: false },
+    { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCache)}`, isAllOrigins: false }
   ];
 
-  // Shuffle proxies to distribute load and avoid hitting same proxy repeatedly
-  const shuffledProxies = proxies.sort(() => Math.random() - 0.5);
-
-  for (let i = 0; i < shuffledProxies.length; i++) {
-    const proxy = shuffledProxies[i];
-    try {
-      const controller = new AbortController();
-      // 6 second timeout - slightly longer for reliability
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-      const response = await fetch(proxy.url, { 
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-        }
-      });
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Status ${response.status}`);
-      let contents = "";
-      if (proxy.type === 'allorigins') {
-        const data = await response.json();
-        contents = data.contents;
-      } else {
-        contents = await response.text();
-      }
-      if (!contents || contents.length < 50) throw new Error("Empty contents");
+  for (let i = 0; i < proxies.length; i++) {
+    const proxy = proxies[i];
+    const contents = await tryProxy(proxy.url, proxy.isAllOrigins);
+    
+    if (contents && contents.length > 50) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(contents, "text/xml");
       let items = Array.from(doc.querySelectorAll("item"));
       if (items.length === 0) items = Array.from(doc.querySelectorAll("entry"));
       items.forEach(item => item.setAttribute("data-custom-source", sourceName));
       return items;
-    } catch (e) { /* Continue to next proxy */ }
+    }
+    
+    // Small delay before trying next proxy
+    if (i < proxies.length - 1) {
+      await delay(300);
+    }
   }
   return [];
 };
@@ -895,38 +897,22 @@ const researchCompanyDetails = async (ticker: string, companyName: string): Prom
   location: string | null; state: string | null; localNewsSources: string[]; enhancedName: string | null;
 }> => {
   const result = { location: null as string | null, state: null as string | null, localNewsSources: [] as string[], enhancedName: null as string | null };
-  const searchQueries = [`${ticker} headquarters location`, `${companyName} based company`, `"${companyName}" headquartered`];
+  const searchQueries = [`${ticker} headquarters location`, `${companyName} based company`];
   const locationPatterns = [/\b([\w\s]+)-based\b/i, /\bheadquartered in ([\w\s,]+)/i, /\bbased in ([\w\s,]+)/i, /\bhome office in ([\w\s,]+)/i];
   const statePatterns = [/\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)\b/i];
 
-  // Multiple proxies for redundancy
-  const makeProxyUrl = (rssUrl: string) => {
-    const proxies = [
-      `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`,
-      `https://corsproxy.io/?${encodeURIComponent(rssUrl)}`,
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rssUrl)}`,
-      `https://thingproxy.freeboard.io/fetch/${rssUrl}`
-    ];
-    return proxies[Math.floor(Math.random() * proxies.length)];
-  };
-
-  for (const query of searchQueries) {
+  for (let qi = 0; qi < searchQueries.length; qi++) {
+    const query = searchQueries[qi];
     try {
       const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-      const proxyUrl = makeProxyUrl(rssUrl);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(proxyUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (!response.ok) continue;
-      let contents;
-      if (proxyUrl.includes('allorigins')) {
-        const json = await response.json();
-        contents = json.contents;
-      } else {
-        contents = await response.text();
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+      const contents = await tryProxy(proxyUrl, true);
+      
+      if (!contents) {
+        await delay(300);
+        continue;
       }
-      if (!contents) continue;
+      
       const parser = new DOMParser();
       const doc = parser.parseFromString(contents, "text/xml");
       const items = Array.from(doc.querySelectorAll("item")).slice(0, 5);
@@ -973,6 +959,11 @@ const researchCompanyDetails = async (ticker: string, companyName: string): Prom
       }
       if (result.state) break;
     } catch (e) { /* Continue */ }
+    
+    // Delay between queries
+    if (qi < searchQueries.length - 1) {
+      await delay(400);
+    }
   }
   
   if (result.state && STATE_LOCAL_NEWS[result.state]) result.localNewsSources = STATE_LOCAL_NEWS[result.state];
@@ -984,62 +975,55 @@ const resolveCompanyIdentity = async (ticker: string): Promise<{ name: string, e
   const yahooSearchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${ticker}&quotesCount=5&newsCount=0`;
   const yahooQuoteUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`;
   
-  const proxyConfigs = [
-    { proxy: (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, parseJson: true },
-    { proxy: (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`, parseJson: false },
-    { proxy: (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, parseJson: false },
-    { proxy: (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`, parseJson: false },
-    { proxy: (url: string) => `https://proxy.cors.sh/${url}`, parseJson: false }
-  ];
-
-  // Shuffle to distribute load
-  const shuffledConfigs = proxyConfigs.sort(() => Math.random() - 0.5);
-
-  const searchPromises = shuffledConfigs.map(async (config) => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(config.proxy(yahooSearchUrl), { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        let searchData;
-        if (config.parseJson) { const json = await res.json(); searchData = JSON.parse(json.contents); }
-        else { searchData = await res.json(); }
-        if (searchData.quotes && searchData.quotes.length > 0) {
-          const exactMatch = searchData.quotes.find((q: any) => q.symbol === ticker || q.symbol === `${ticker}.US` || q.symbol?.toUpperCase() === ticker);
-          const match = exactMatch || searchData.quotes[0];
-          if (match && (match.shortname || match.longname)) return match.longname || match.shortname;
-        }
-      }
-    } catch (e) { /* Continue */ }
-    return null;
-  });
-
-  const quotePromises = shuffledConfigs.map(async (config) => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(config.proxy(yahooQuoteUrl), { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        let quoteData;
-        if (config.parseJson) { const json = await res.json(); quoteData = JSON.parse(json.contents); }
-        else { quoteData = await res.json(); }
-        if (quoteData.quoteResponse?.result?.length > 0) {
-          const quote = quoteData.quoteResponse.result[0];
-          if (quote.shortName || quote.longName) return quote.longName || quote.shortName;
-        }
-      }
-    } catch (e) { /* Continue */ }
-    return null;
-  });
-
+  // Try search endpoint first with allorigins
   try {
-    const allPromises = [...searchPromises, ...quotePromises];
-    const results = await Promise.all(allPromises.map(p => p.catch(() => null)));
-    const validResult = results.find(r => r !== null);
-    if (validResult) return { name: validResult, executives: defaultExecs };
-  } catch (e) { /* API resolution failed, using fallback */ }
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooSearchUrl)}`;
+    const contents = await tryProxy(proxyUrl, true);
+    if (contents) {
+      const searchData = JSON.parse(contents);
+      if (searchData.quotes && searchData.quotes.length > 0) {
+        const exactMatch = searchData.quotes.find((q: any) => q.symbol === ticker || q.symbol === `${ticker}.US` || q.symbol?.toUpperCase() === ticker);
+        const match = exactMatch || searchData.quotes[0];
+        if (match && (match.shortname || match.longname)) {
+          return { name: match.longname || match.shortname, executives: defaultExecs };
+        }
+      }
+    }
+  } catch (e) { /* Continue */ }
+  
+  await delay(500);
+  
+  // Try quote endpoint as fallback
+  try {
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooQuoteUrl)}`;
+    const contents = await tryProxy(proxyUrl, true);
+    if (contents) {
+      const quoteData = JSON.parse(contents);
+      if (quoteData.quoteResponse?.result?.length > 0) {
+        const quote = quoteData.quoteResponse.result[0];
+        if (quote.shortName || quote.longName) {
+          return { name: quote.longName || quote.shortName, executives: defaultExecs };
+        }
+      }
+    }
+  } catch (e) { /* Continue */ }
+  
+  await delay(500);
+  
+  // Try corsproxy.io as backup
+  try {
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooSearchUrl)}`;
+    const contents = await tryProxy(proxyUrl, false);
+    if (contents) {
+      const searchData = JSON.parse(contents);
+      if (searchData.quotes && searchData.quotes.length > 0) {
+        const match = searchData.quotes[0];
+        if (match && (match.shortname || match.longname)) {
+          return { name: match.longname || match.shortname, executives: defaultExecs };
+        }
+      }
+    }
+  } catch (e) { /* Continue */ }
 
   return { name: ticker, executives: defaultExecs };
 };
@@ -1145,43 +1129,39 @@ const fetchSocialSentiment = async (ticker: string, companyName: string, onProgr
   if (onProgress) onProgress(`Searching Reddit discussions for ${shortName}...`);
   
   try {
-    const redditQueries = [`site:reddit.com "${shortName}" stock`, `site:reddit.com ${ticker} wallstreetbets`, `site:reddit.com "${shortName}" customer experience`];
-    for (const query of redditQueries) {
-      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-      const items = await fetchRSS(rssUrl, "Reddit");
-      for (const item of items.slice(0, 5)) {
-        const { title, description } = extractItemData(item);
-        const fullText = `${title} ${description}`;
-        const scores = analyzeClause(fullText);
-        sentiment.reddit.score += scores.consumerScore;
-        sentiment.reddit.count++;
-        sentiment.reddit.mentions.push({ title, sentiment: scores.consumerScore > 0.5 ? 'positive' : scores.consumerScore < -0.5 ? 'negative' : 'neutral' });
-      }
+    // Only do one Reddit query to reduce requests
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(`site:reddit.com "${shortName}" OR ${ticker}`)}&hl=en-US&gl=US&ceid=US:en`;
+    const items = await fetchRSS(rssUrl, "Reddit");
+    for (const item of items.slice(0, 5)) {
+      const { title, description } = extractItemData(item);
+      const fullText = `${title} ${description}`;
+      const scores = analyzeClause(fullText);
+      sentiment.reddit.score += scores.consumerScore;
+      sentiment.reddit.count++;
+      sentiment.reddit.mentions.push({ title, sentiment: scores.consumerScore > 0.5 ? 'positive' : scores.consumerScore < -0.5 ? 'negative' : 'neutral' });
     }
     if (sentiment.reddit.count > 0) sentiment.reddit.score = sentiment.reddit.score / sentiment.reddit.count;
   } catch (e) { /* Reddit sentiment fetch failed silently */ }
 
+  await delay(400);
+
   if (onProgress) onProgress(`Analyzing consumer reviews for ${shortName}...`);
   
   try {
-    const reviewQueries = [`site:trustpilot.com "${shortName}"`, `site:consumeraffairs.com "${shortName}"`, `site:bbb.org "${shortName}"`, `site:g2.com "${shortName}"`];
-    for (const query of reviewQueries) {
-      const platform = query.match(/site:(\w+\.com)/)?.[1] || 'unknown';
-      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-      const items = await fetchRSS(rssUrl, "Reviews");
-      for (const item of items.slice(0, 3)) {
-        const { title, description } = extractItemData(item);
-        const fullText = `${title} ${description}`;
-        const scores = analyzeClause(fullText);
-        sentiment.reviews.score += scores.consumerScore;
-        sentiment.reviews.count++;
-        if (!sentiment.reviews.platforms[platform]) sentiment.reviews.platforms[platform] = { score: 0, count: 0 };
-        sentiment.reviews.platforms[platform].score += scores.consumerScore;
-        sentiment.reviews.platforms[platform].count++;
-      }
+    // Single combined review query
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(`("${shortName}" OR ${ticker}) (review OR rating OR complaint)`)}&hl=en-US&gl=US&ceid=US:en`;
+    const items = await fetchRSS(rssUrl, "Reviews");
+    for (const item of items.slice(0, 5)) {
+      const { title, description } = extractItemData(item);
+      const fullText = `${title} ${description}`;
+      const scores = analyzeClause(fullText);
+      sentiment.reviews.score += scores.consumerScore;
+      sentiment.reviews.count++;
     }
     if (sentiment.reviews.count > 0) sentiment.reviews.score = sentiment.reviews.score / sentiment.reviews.count;
   } catch (e) { /* Consumer reviews fetch failed silently */ }
+
+  await delay(400);
 
   if (onProgress) onProgress(`Checking employer sentiment for ${shortName}...`);
   
@@ -1220,6 +1200,8 @@ export async function fetchAndAnalyzeTicker(ticker: string, onProgress?: (msg: s
   const identity = await resolveCompanyIdentity(t);
   let companyName = identity.name;
 
+  await delay(500);
+
   if (onProgress) onProgress(`Researching ${companyName}...`);
   const research = await researchCompanyDetails(t, companyName);
   if (companyName === t && research.enhancedName) companyName = research.enhancedName;
@@ -1255,80 +1237,47 @@ export async function fetchAndAnalyzeTicker(ticker: string, onProgress?: (msg: s
   const yahooRssUrl = `https://finance.yahoo.com/rss/headline?s=${t}`;
   const execQueryBase = execQueries ? `${entityQuery} AND (${execQueries} OR CEO OR CFO OR "Chief Executive")` : `${entityQuery} AND (CEO OR CFO OR "Chief Executive")`;
 
-  const financialSources = FINANCIAL_MAJORS.join(" OR ");
-  const globalSources = GLOBAL_MAJORS.join(" OR ");
-  const usSources = [...US_MAJOR_METROS.slice(0, 30), ...US_REGIONAL.slice(0, 20)].join(" OR ");
-  const intlSources = [...INTL_EUROPE, ...INTL_ASIA_PACIFIC, ...INTL_AMERICAS_OTHER].join(" OR ");
-  const techSources = TECH_INDUSTRY.join(" OR ");
+  const financialSources = FINANCIAL_MAJORS.slice(0, 10).join(" OR ");
 
+  // Reduced set of queries - only the most essential ones for reliability
   const queries = [
     { label: "Yahoo Finance", urlOverride: yahooRssUrl, q: "" },
-    { label: "Financial Majors", q: `${entityQuery} AND (${financialSources}) when:28d` },
-    { label: "Global News", q: `${entityQuery} AND (${globalSources}) when:28d` },
-    { label: "US Regional News", q: `${entityQuery} AND (${usSources}) when:28d` },
-    { label: "International", q: `${entityQuery} AND (${intlSources}) when:28d` },
-    { label: "Tech & Industry", q: `${entityQuery} AND (${techSources}) when:28d` },
-    { label: "Executive Voice", q: `${execQueryBase} AND ("press release" OR "earnings call" OR transcript OR "shareholder letter" OR "investor day" OR "annual meeting") when:28d` },
-    { label: "Executive Media", q: `${execQueryBase} AND (interview OR speaks OR discusses OR "fireside chat" OR "Q&A" OR quotes OR said OR announced OR comments OR podcast) when:28d` },
-    { label: "Wall Street", q: `${entityQuery} AND (analyst OR upgrade OR downgrade OR "price target" OR rating OR "initiates coverage" OR "reiterates" OR "maintains") when:28d` },
-    { label: "Consumer", q: `${entityQuery} AND (customer OR review OR product OR service OR complaint OR "social media" OR sentiment OR demand OR sales OR store OR brand OR app OR users OR traffic OR survey OR ${GRASSROOTS_SOURCES.join(" OR ")}) when:28d` },
-    { label: "Industry Analysis", q: `${entityQuery} AND (business OR sector OR industry OR growth OR strategy OR competition OR "market share") when:28d` },
-    // Add broad search without source restrictions
+    { label: "Financial News", q: `${entityQuery} AND (${financialSources}) when:28d` },
+    { label: "Executive Voice", q: `${execQueryBase} AND ("earnings call" OR transcript OR "shareholder letter" OR interview OR said OR announced) when:28d` },
+    { label: "Wall Street", q: `${entityQuery} AND (analyst OR upgrade OR downgrade OR "price target" OR rating) when:28d` },
+    { label: "Consumer Sentiment", q: `${entityQuery} AND (customer OR review OR product OR demand OR sales OR brand) when:28d` },
     { label: "Broad News", q: `${entityQuery} when:14d` },
-    // Add earnings/financial events search
-    { label: "Financial Events", q: `${entityQuery} AND (earnings OR revenue OR "quarterly results" OR "financial results" OR guidance OR forecast OR outlook) when:28d` },
   ];
 
-  // Add subsidiary-specific searches for companies with known brands
+  // Only add one subsidiary search if available
   if (subsidiaries.length > 0) {
-    // Pick top 3 most distinctive subsidiaries for additional searches
-    const topSubsidiaries = subsidiaries.slice(0, 3);
-    topSubsidiaries.forEach(sub => {
-      queries.push({ label: `${sub} News`, q: `"${sub}" AND (news OR announcement OR launch OR update OR release) when:14d` });
-    });
-  }
-
-  if (research.localNewsSources.length > 0) {
-    const localSources = research.localNewsSources.join(" OR ");
-    const stateLabel = research.state ? research.state.charAt(0).toUpperCase() + research.state.slice(1) : "Local";
-    if (onProgress) onProgress(`Adding ${stateLabel} local news sources...`);
-    queries.push({ label: `${stateLabel} Local`, q: `${entityQuery} AND (${localSources}) when:28d` });
-    if (research.location) queries.push({ label: `${stateLabel} Regional`, q: `${entityQuery} AND ("${research.location}" OR "${research.state}") when:28d` });
+    queries.push({ label: `${subsidiaries[0]} News`, q: `"${subsidiaries[0]}" AND (news OR announcement) when:14d` });
   }
 
   if (onProgress) onProgress(`Fetching social media sentiment...`);
   const socialSentimentPromise = fetchSocialSentiment(t, companyName, onProgress);
 
-  // Fetch all queries with individual timeouts - collect whatever succeeds
-  const fetchPromises = queries.map(query => {
-    const fetchFn = query.urlOverride 
-      ? fetchRSS(query.urlOverride, query.label) 
-      : fetchRSS(`https://news.google.com/rss/search?q=${encodeURIComponent(query.q)}&hl=en-US&gl=US&ceid=US:en`, query.label);
-    
-    // Each individual fetch has a timeout, but we don't fail the whole operation
-    return fetchFn.catch(() => [] as Element[]);
-  });
-
-  // Use Promise.allSettled to get all results, even if some fail
-  // Set a generous timeout but don't reject - just proceed with what we have
+  // Fetch queries SEQUENTIALLY with delays to avoid rate limiting
+  // This is slower but much more reliable on hosted environments
   let results: Element[][] = [];
   
-  const timeoutMs = 45000; // 45 seconds max
-  const resultsPromise = Promise.all(fetchPromises);
-  
-  // Race between results and timeout, but timeout just returns empty arrays for remaining
-  const timeoutPromise = new Promise<Element[][]>((resolve) => {
-    setTimeout(() => {
-      if (onProgress) onProgress(`Proceeding with available data...`);
-      resolve(queries.map(() => []));
-    }, timeoutMs);
-  });
-
-  try {
-    results = await Promise.race([resultsPromise, timeoutPromise]);
-  } catch (e) {
-    // If somehow we still get an error, just use empty results
-    results = queries.map(() => []);
+  for (let i = 0; i < queries.length; i++) {
+    const query = queries[i];
+    if (onProgress) onProgress(`Fetching ${query.label}... (${i + 1}/${queries.length})`);
+    
+    try {
+      const items = query.urlOverride 
+        ? await fetchRSS(query.urlOverride, query.label) 
+        : await fetchRSS(`https://news.google.com/rss/search?q=${encodeURIComponent(query.q)}&hl=en-US&gl=US&ceid=US:en`, query.label);
+      results.push(items);
+    } catch (e) {
+      results.push([]);
+    }
+    
+    // Add delay between queries to avoid rate limiting (except after last one)
+    if (i < queries.length - 1) {
+      await delay(400);
+    }
   }
 
   const allRawItems = results.flat();
