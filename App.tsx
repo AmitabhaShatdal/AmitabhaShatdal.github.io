@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import AnalysisCharts from './components/AnalysisCharts';
 import AlphaSpreadDisplay from './components/AlphaSpreadDisplay';
 import NewsFeed from './components/NewsFeed';
-import { AdBanner } from './components/Monetization';
 import SignalCard from './components/SignalCard';
 import { fetchAndAnalyzeTicker } from './services/analysisService';
 import { CompanyAnalysisResult, AnalysisStatus } from './types';
@@ -18,10 +17,8 @@ const App: React.FC = () => {
     // Hide static elements
     const staticHero = document.getElementById('static-hero');
     const staticSearch = document.getElementById('static-search');
-    const staticAd = document.getElementById('static-ad');
     if (staticHero) staticHero.style.display = 'none';
     if (staticSearch) staticSearch.style.display = 'none';
-    if (staticAd) staticAd.style.display = 'none';
 
     // Scroll to just after the header (header is 5rem = 80px)
     window.scrollTo({ top: 80, behavior: 'smooth' });
@@ -53,10 +50,8 @@ const App: React.FC = () => {
     // Show static elements again
     const staticHero = document.getElementById('static-hero');
     const staticSearch = document.getElementById('static-search');
-    const staticAd = document.getElementById('static-ad');
     if (staticHero) staticHero.style.display = 'block';
     if (staticSearch) staticSearch.style.display = 'block';
-    if (staticAd) staticAd.style.display = 'block';
     
     // Clear input
     const input = document.getElementById('ticker-input') as HTMLInputElement;
@@ -854,10 +849,6 @@ const App: React.FC = () => {
            <AlphaSpreadDisplay data={data} />
 
            <AnalysisCharts data={data} />
-           
-           <div className="my-16">
-             <AdBanner variant="horizontal" />
-           </div>
            
            <NewsFeed data={data} />
         </div>

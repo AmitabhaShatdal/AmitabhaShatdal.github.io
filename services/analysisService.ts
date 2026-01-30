@@ -758,23 +758,37 @@ const extractItemData = (item: Element) => {
 
 const fetchRSS = async (url: string, sourceName: string): Promise<Element[]> => {
   const urlWithCache = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+  
+  // Multiple CORS proxies for redundancy - if one fails or blocks GitHub Pages, others will work
   const proxies = [
-    `https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCache)}`,
-    `https://corsproxy.io/?${encodeURIComponent(urlWithCache)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCache)}`
+    { url: `https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCache)}`, type: 'allorigins' },
+    { url: `https://corsproxy.io/?${encodeURIComponent(urlWithCache)}`, type: 'text' },
+    { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCache)}`, type: 'text' },
+    { url: `https://thingproxy.freeboard.io/fetch/${urlWithCache}`, type: 'text' },
+    { url: `https://cors-anywhere.herokuapp.com/${urlWithCache}`, type: 'text' },
+    { url: `https://proxy.cors.sh/${urlWithCache}`, type: 'text' },
+    { url: `https://crossorigin.me/${urlWithCache}`, type: 'text' }
   ];
 
-  for (let i = 0; i < proxies.length; i++) {
-    const proxyUrl = proxies[i];
+  // Shuffle proxies to distribute load and avoid hitting same proxy repeatedly
+  const shuffledProxies = proxies.sort(() => Math.random() - 0.5);
+
+  for (let i = 0; i < shuffledProxies.length; i++) {
+    const proxy = shuffledProxies[i];
     try {
       const controller = new AbortController();
-      // Faster timeout (4 seconds) so we can try more proxies quickly
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const response = await fetch(proxyUrl, { signal: controller.signal });
+      // 6 second timeout - slightly longer for reliability
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const response = await fetch(proxy.url, { 
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        }
+      });
       clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Status ${response.status}`);
       let contents = "";
-      if (proxyUrl.includes("allorigins")) {
+      if (proxy.type === 'allorigins') {
         const data = await response.json();
         contents = data.contents;
       } else {
@@ -885,17 +899,33 @@ const researchCompanyDetails = async (ticker: string, companyName: string): Prom
   const locationPatterns = [/\b([\w\s]+)-based\b/i, /\bheadquartered in ([\w\s,]+)/i, /\bbased in ([\w\s,]+)/i, /\bhome office in ([\w\s,]+)/i];
   const statePatterns = [/\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)\b/i];
 
+  // Multiple proxies for redundancy
+  const makeProxyUrl = (rssUrl: string) => {
+    const proxies = [
+      `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(rssUrl)}`,
+      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rssUrl)}`,
+      `https://thingproxy.freeboard.io/fetch/${rssUrl}`
+    ];
+    return proxies[Math.floor(Math.random() * proxies.length)];
+  };
+
   for (const query of searchQueries) {
     try {
       const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+      const proxyUrl = makeProxyUrl(rssUrl);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const response = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
       if (!response.ok) continue;
-      const json = await response.json();
-      const contents = json.contents;
+      let contents;
+      if (proxyUrl.includes('allorigins')) {
+        const json = await response.json();
+        contents = json.contents;
+      } else {
+        contents = await response.text();
+      }
       if (!contents) continue;
       const parser = new DOMParser();
       const doc = parser.parseFromString(contents, "text/xml");
@@ -957,13 +987,18 @@ const resolveCompanyIdentity = async (ticker: string): Promise<{ name: string, e
   const proxyConfigs = [
     { proxy: (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, parseJson: true },
     { proxy: (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`, parseJson: false },
-    { proxy: (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, parseJson: false }
+    { proxy: (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, parseJson: false },
+    { proxy: (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`, parseJson: false },
+    { proxy: (url: string) => `https://proxy.cors.sh/${url}`, parseJson: false }
   ];
 
-  const searchPromises = proxyConfigs.map(async (config) => {
+  // Shuffle to distribute load
+  const shuffledConfigs = proxyConfigs.sort(() => Math.random() - 0.5);
+
+  const searchPromises = shuffledConfigs.map(async (config) => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const res = await fetch(config.proxy(yahooSearchUrl), { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
@@ -980,10 +1015,10 @@ const resolveCompanyIdentity = async (ticker: string): Promise<{ name: string, e
     return null;
   });
 
-  const quotePromises = proxyConfigs.map(async (config) => {
+  const quotePromises = shuffledConfigs.map(async (config) => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const res = await fetch(config.proxy(yahooQuoteUrl), { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
