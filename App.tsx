@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import AnalysisCharts from './components/AnalysisCharts';
 import AlphaSpreadDisplay from './components/AlphaSpreadDisplay';
 import NewsFeed from './components/NewsFeed';
-import { AdBanner } from './components/Monetization';
 import SignalCard from './components/SignalCard';
 import { fetchAndAnalyzeTicker } from './services/analysisService';
 import { CompanyAnalysisResult, AnalysisStatus } from './types';
@@ -854,10 +853,6 @@ const App: React.FC = () => {
            <AlphaSpreadDisplay data={data} />
 
            <AnalysisCharts data={data} />
-           
-           <div className="my-16">
-             <AdBanner variant="horizontal" />
-           </div>
            
            <NewsFeed data={data} />
         </div>
