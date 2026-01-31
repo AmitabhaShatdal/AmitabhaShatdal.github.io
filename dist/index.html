@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Real-time sentiment analysis of C-Suite executives vs Wall Street expectations using Natural Language Processing." />
+    <meta property="og:title" content="Alpha Quelle - Market vs. Management" />
+    <meta property="og:description" content="Analyze the gap between what Wall Street predicts and what Executives are actually saying." />
+    <meta property="og:type" content="website" />
+    <title>Alpha Quelle - Market vs Management</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>">
+    
+    <!-- Preload skyscraper ad images for faster loading -->
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/144069642">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/45885258">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/110723517">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/141877792">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/14956727">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/130681063">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/73325320?obj=metals&amp;obj=stones/faceted/g_center&amp;obj.colorRef=71&amp;obj.curves=0,0.52,110.95,200.114,220.255,255&amp;obj.curves.r=0,0.86,102.153,168.255,255&amp;obj.curves.g=0,0.61,47.91,75.150,133.255,255&amp;obj.curves.b=0,0.60,53.93,83.135,123.255,230&amp;obj=metals&amp;obj.recipe=yellow&amp;$xlarge$">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/73660057?obj=stones/diamonds/g_Accent&amp;obj=stones/faceted/g_Center&amp;obj.curves=0,0.121,215.185,255.255,255&amp;obj.curves.r=41,0.60,28.128,82.176,127.237,255.255,255&amp;obj.curves.g=22,0.128,138.248,255.255,255&amp;obj.curves.b=20,0.128,167.251,255.255,255&amp;obj=metals&amp;obj=metals&amp;obj.recipe=yellow&amp;$xlarge$">
+    <link rel="preload" as="image" href="https://goodmansjewelers.com/wp-content/uploads/al_opt_content/IMAGE/goodmansjewelers.com/wp-content/uploads/2023/04/Concourse-Hotel-Image-1-jpg-e1685202917380.webp">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/98813701?obj=metals&amp;obj.recipe=yellow&amp;obj=stones&amp;obj.curves=0,3.56,28.216,201.255,255&amp;obj.curves.r=0,26.198,244.255,255&amp;obj.curves.g=29,0.192,135.243,226.255,255&amp;obj.curves.b=31,0.78,22.196,213.255,255&amp;$">
+    <link rel="preload" as="image" href="https://meteor.stullercloud.com/das/126821436?obj=stones/diamonds/g_Accent%201&amp;obj=stones/diamonds/g_Accent%202&amp;obj=stones/diamonds/g_Center&amp;obj=metals&amp;obj.recipe=yellow&amp;$">
+    <script type="module" crossorigin src="/assets/main-KVpF7beH.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/users-VRj_M086.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-BRWN41Zl.css">
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <a href="index.html" class="logo">
+          <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="logo-text" style="font-style: italic; letter-spacing: 0.05em;">AQ</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+      
+      <!-- Hero (static) -->
+      <div id="static-hero" class="hero">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>Real-time Intelligence</span>
+        </div>
+        <h1 class="title">
+          Alpha Quelle
+        </h1>
+        <p class="tagline">
+          Stay informed like the Wall Street traders.
+        </p>
+      </div>
+
+      <!-- Search (static) -->
+      <div id="static-search" class="search-container">
+        <form id="search-form" class="search-wrapper">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            id="ticker-input"
+            class="search-input"
+            placeholder="Enter ticker symbol..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit" id="search-btn" class="search-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </form>
+
+        <div class="trending">
+          <span class="trending-label">Trending:</span>
+          <button type="button" class="ticker-btn" data-ticker="AAPL">AAPL</button>
+          <button type="button" class="ticker-btn" data-ticker="MSFT">MSFT</button>
+          <button type="button" class="ticker-btn" data-ticker="GOOGL">GOOGL</button>
+          <button type="button" class="ticker-btn" data-ticker="NVDA">NVDA</button>
+          <button type="button" class="ticker-btn" data-ticker="TSLA">TSLA</button>
+        </div>
+      </div>
+
+      <!-- React mounts here -->
+      <div id="root"></div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <p class="footer-copy">&copy; <span id="year"></span> Alpha Quelle. All rights reserved.</p>
+        <nav class="footer-nav">
+          <a href="privacy.html" class="footer-link">Privacy</a>
+          <a href="methodology.html" class="footer-link">Methodology</a>
+          <a href="about.html" class="footer-link">About</a>
+          <a href="contact.html" class="footer-link">Contact</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+    
+    <!-- Hidden preloaded images for skyscraper ads - loads immediately with page -->
+    <div style="position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;" aria-hidden="true">
+      <img src="https://meteor.stullercloud.com/das/144069642" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/45885258" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/110723517" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/141877792" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/14956727" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/130681063" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/73325320?obj=metals&obj=stones/faceted/g_center&obj.colorRef=71&obj.curves=0,0.52,110.95,200.114,220.255,255&obj.curves.r=0,0.86,102.153,168.255,255&obj.curves.g=0,0.61,47.91,75.150,133.255,255&obj.curves.b=0,0.60,53.93,83.135,123.255,230&obj=metals&obj.recipe=yellow&$xlarge$" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/73660057?obj=stones/diamonds/g_Accent&obj=stones/faceted/g_Center&obj.curves=0,0.121,215.185,255.255,255&obj.curves.r=41,0.60,28.128,82.176,127.237,255.255,255&obj.curves.g=22,0.128,138.248,255.255,255&obj.curves.b=20,0.128,167.251,255.255,255&obj=metals&obj=metals&obj.recipe=yellow&$xlarge$" alt="" width="1" height="1">
+      <img src="https://goodmansjewelers.com/wp-content/uploads/al_opt_content/IMAGE/goodmansjewelers.com/wp-content/uploads/2023/04/Concourse-Hotel-Image-1-jpg-e1685202917380.webp" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/98813701?obj=metals&obj.recipe=yellow&obj=stones&obj.curves=0,3.56,28.216,201.255,255&obj.curves.r=0,26.198,244.255,255&obj.curves.g=29,0.192,135.243,226.255,255&obj.curves.b=31,0.78,22.196,213.255,255&$" alt="" width="1" height="1">
+      <img src="https://meteor.stullercloud.com/das/126821436?obj=stones/diamonds/g_Accent%201&obj=stones/diamonds/g_Accent%202&obj=stones/diamonds/g_Center&obj=metals&obj.recipe=yellow&$" alt="" width="1" height="1">
+    </div>
+    
+  </body>
+</html>

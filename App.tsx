@@ -497,7 +497,7 @@ const App: React.FC = () => {
                           
                           {/* ALL text inside pearl area */}
                           <div style={{ 
-                            marginTop: '-120px',
+                            marginTop: '-111px',
                             fontFamily: 'GentiumBookW, Georgia, serif', 
                             color: '#3A2E20', 
                             lineHeight: '1.75', 
@@ -520,15 +520,6 @@ const App: React.FC = () => {
                               <span style={{ fontSize: '11px' }}>E</span><span style={{ fontSize: '8px' }}>NGAGEMENT </span>
                               <span style={{ fontSize: '11px' }}>R</span><span style={{ fontSize: '8px' }}>INGS</span>
                             </div>
-                            {/* French phrase in italics - INSIDE the pearl frame */}
-                            <div style={{ 
-                              fontFamily: 'GentiumBookW, Georgia, serif', 
-                              fontSize: '11px', 
-                              fontStyle: 'italic', 
-                              color: '#5A4A38', 
-                              marginTop: '3px',
-                              letterSpacing: '0.04em'
-                            }}>Je désir vous Cervir</div>
                           </div>
                           
                           {/* Text above the necklace chain */}
